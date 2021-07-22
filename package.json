@@ -1,0 +1,14 @@
+{
+	"name": "udany-toolbox",
+	"version": "1.0.0",
+	"description": "Collection of utilities",
+	"main": "index.js",
+	"scripts": {},
+	"author": "",
+	"license": "ISC",
+	"peerDependencies": {
+		"vue": "^3.x.x",
+		"@vueuse/core": "^4.x.x",
+		"@vueuse/integrations": "^5.x.x"
+	}
+}

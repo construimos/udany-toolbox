@@ -6,9 +6,11 @@
 	"scripts": {},
 	"author": "",
 	"license": "ISC",
+	"dependencies": {
+		"@vueuse/core": "^4.11.2",
+		"@vueuse/integrations": "^5.1.3"
+	},
 	"peerDependencies": {
-		"vue": "^3.x.x",
-		"@vueuse/core": "^4.x.x",
-		"@vueuse/integrations": "^5.x.x"
+		"vue": "^3.x.x"
 	}
 }

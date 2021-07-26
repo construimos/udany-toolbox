@@ -1,4 +1,4 @@
-import './extend/Date';
+import '../extend/Date';
 import HasUniqueId from './HasUniqueId.js';
 
 /**

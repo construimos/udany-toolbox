@@ -2,7 +2,13 @@ import {Emitter} from '../classes/Emitter.js'
 
 if (Object.getOwnPropertyDescriptor(Array.prototype, 'push').writable) {
 	// Makes array an event emitter
-	Object.assign(Array.prototype, Emitter.prototype);
+	let descriptors = Object.getOwnPropertyDescriptors(Emitter.prototype);
+
+	for (let key of Object.keys(descriptors)) {
+		if (key === 'constructor') continue;
+
+		Object.defineProperty(Array.prototype, key, descriptors[key]);
+	}
 
 	// Utility functions
 	Array.prototype.selfConcat = function () {

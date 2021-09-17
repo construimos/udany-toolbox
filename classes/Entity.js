@@ -1,10 +1,4 @@
-/*
- * Description: Base Entity Class
- * Version: 0.1
- * Author: Daniel Andrade
- * This code may not be reused without proper permission from its creator.
- */
-import {Emitter} from './General';
+import Emitter from './Emitter.js';
 
 /**
  * @name Entity

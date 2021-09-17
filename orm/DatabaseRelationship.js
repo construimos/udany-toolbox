@@ -4,24 +4,28 @@ import { DatabaseQueryCondition } from './DatabaseQueryComponent';
 /**
  * @name DatabaseRelationship
  *
- * @property {Function} model The model
- * @property {Function} externalModel The external model
- *
- * @property {string} property The property the relationship is stored within the current model
- *
- * @property {string} localKey A field that identifies the current model within itself
- * @property {string} localForeignKey A field that identifies the current model within the external model
- *
- * @property {string} externalKey A field that identifies the external model within itself
- * @property {string} externalForeignKey A field that identifies the external model within the current model
- *
- * @property {Boolean} _readOnly Means the current relationship will only ever query data and never attempt to update it automatically
- * @property {Boolean} _autoload Means the current relationship will always be queried when querying it's own model
- *
- * @property {DatabaseQueryCondition[]|Object[]} filters Filters to apply when querying the relationship
- * @property {string} order Order clause to be used when querying the relationship
+ * @template {Entity} T
+ * @template {Entity} E
  */
 export class DatabaseRelationship {
+	/**
+	 * @param {DatabaseModel<T>} model The model
+	 * @param {DatabaseModel<E>} externalModel The external model
+	 *
+	 * @param {string} property The property the relationship is stored within the current model
+	 *
+	 * @param {string} localKey A field that identifies the current model within itself
+	 * @param {string} localForeignKey A field that identifies the current model within the external model
+	 *
+	 * @param {string} externalKey A field that identifies the external model within itself
+	 * @param {string} externalForeignKey A field that identifies the external model within the current model
+	 *
+	 * @param {Boolean} readOnly Means the current relationship will only ever query data and never attempt to update it automatically
+	 * @param {Boolean} autoload Means the current relationship will always be queried when querying it's own model
+	 *
+	 * @param {ModelFilters} filters Filters to apply when querying the relationship
+	 * @param {string} order Order clause to be used when querying the relationship
+	 */
 	constructor({
 		model,
 		externalModel,
@@ -38,7 +42,7 @@ export class DatabaseRelationship {
 		autoload = false,
 
 		filters = [],
-		order = ''
+		order = '',
 	}) {
 		this.model = model;
 		this.externalModel = externalModel;
@@ -58,17 +62,13 @@ export class DatabaseRelationship {
 		this.order = order;
 	}
 
-	async query(db, obj) {
-	}
+	async query(obj) {}
 
-	async select(db, obj) {
-	}
+	async select(obj) {}
 
-	async selectMany(db, objs) {
-	}
+	//async selectMany(objs) {}
 
-	async save(db, obj) {
-	}
+	async save(obj) {}
 
 	readonly(v) {
 		return this._setOrReturnKey('_readOnly', v)
@@ -92,18 +92,63 @@ export class DatabaseRelationship {
 DatabaseRelationship.prototype._setOrReturnKey = setOrReturnKey;
 
 
+/**
+ * @name DatabaseRelationshipOneToMany
+ *
+ * @extends {DatabaseRelationship<T, E>}
+ *
+ * @template {Entity} T
+ * @template {Entity} E
+ */
 export class DatabaseRelationshipOneToMany extends DatabaseRelationship {
+	/**
+	 * @param {DatabaseModel<T>} model The model
+	 * @param {DatabaseModel<E>} externalModel The external model
+	 *
+	 * @param {string} property The property the relationship is stored within the current model
+	 *
+	 * @param {string} localKey A field that identifies the current model within itself
+	 * @param {string} localForeignKey A field that identifies the current model within the external model
+	 *
+	 * @param {Boolean} readOnly Means the current relationship will only ever query data and never attempt to update it automatically
+	 * @param {Boolean} autoload Means the current relationship will always be queried when querying it's own model
+	 *
+	 * @param {ModelFilters} filters Filters to apply when querying the relationship
+	 * @param {string} order Order clause to be used when querying the relationship
+	 */
 	constructor({
 		model,
 		externalModel,
+
 		property,
-		localKey = 'id',
-		localForeignKey
+
+		localKey = '',
+		localForeignKey = '',
+
+		readOnly = true,
+		autoload = false,
+
+		filters = [],
+		order = '',
 	}) {
-		super({model, externalModel, property, localKey, localForeignKey})
+		super({
+			model,
+			externalModel,
+
+			property,
+
+			localKey,
+			localForeignKey,
+
+			readOnly,
+			autoload,
+
+			filters,
+			order,
+		})
 	}
 
-	async query(db, obj) {
+	async query(obj) {
 		const id = obj[this.localKey];
 
 		const filters = this.filters.concat([
@@ -113,32 +158,35 @@ export class DatabaseRelationshipOneToMany extends DatabaseRelationship {
 			})
 		]);
 
-		return this.externalModel.select(db, filters, this.order);
+		return this.externalModel.select({
+			filters: filters,
+			order: this.order
+		});
 	}
 
-	async select(db, obj) {
-		const result = await this.query(db, obj);
+	async select(obj) {
+		const result = await this.query(obj);
 
 		obj[this.property] = result;
 
 		return result;
 	}
 
-	async save(db, obj) {
+	async save(obj) {
 		let id = obj[this.localKey];
 		let data = obj[this.property];
 
 		for (const item of data) {
 			item[this.localForeignKey] = id;
 
-			await this.externalModel.save(db, item);
+			await this.externalModel.save(item);
 		}
 
-		let list = await this.query(db, obj);
-		let deleted = list.filter(element => !data.find(x => this.externalModel.comparePrimaryKeys(x, element)));
+		let list = await this.query(obj);
+		let deleted = list.filter(element => !data.find(x => this.externalModel.compareByPK(x, element)));
 
 		for (const item of deleted) {
-			await this.externalModel.deleteByModel(db, item);
+			await this.externalModel.deleteByModel(item);
 		}
 	}
 }
@@ -146,43 +194,75 @@ export class DatabaseRelationshipOneToMany extends DatabaseRelationship {
 
 /**
  * @name DatabaseRelationshipManyToMany
- * @extends DatabaseRelationship
  *
- * @property {Function} intermediaryModel The intermediary model between both models
+ * @extends {DatabaseRelationship<T, E>}
  *
- * @property {string} localKey A field that identifies the current model within itself
- * @property {string} localForeignKey A field that identifies the current model within the intermediary model
- *
- * @property {string} externalKey A field that identifies the external model within itself
- * @property {string} externalForeignKey A field that identifies the external model within the intermediary model
+ * @template {Entity} T
+ * @template {Entity} E
+ * @template {Entity} I
  */
 export class DatabaseRelationshipManyToMany extends DatabaseRelationship {
+	/**
+	 * @param {DatabaseModel<T>} model The model
+	 * @param {DatabaseModel<E>} externalModel The external model
+	 * @param {DatabaseModel<I>} intermediaryModel The intermediary model between both models
+	 *
+	 * @param {string} property The property the relationship is stored within the current model
+	 *
+	 * @param {string} [localKey] A field that identifies the current model within itself
+	 * @param {string} localForeignKey A field that identifies the current model within the intermediary model
+	 *
+	 * @param {string} [externalKey] A field that identifies the external model within itself
+	 * @param {string} externalForeignKey A field that identifies the external model within the intermediary model
+	 *
+	 * @param {Boolean} readOnly Means the current relationship will only ever query data and never attempt to update it automatically
+	 * @param {Boolean} autoload Means the current relationship will always be queried when querying it's own model
+	 *
+	 * @param {ModelFilters} filters Filters to apply when querying the relationship
+	 * @param {string} order Order clause to be used when querying the relationship
+	 */
 	constructor({
 		model,
-		intermediaryModel,
 		externalModel,
+		intermediaryModel,
+
 		property,
+
 		localKey = 'id',
 		localForeignKey,
+
 		externalKey = 'id',
-		externalForeignKey
+		externalForeignKey,
+
+		readOnly = true,
+		autoload = false,
+
+		filters = [],
+		order = '',
 	}) {
 		super({
 			model,
 			externalModel,
+
 			property,
 
 			localKey,
 			localForeignKey,
 
 			externalKey,
-			externalForeignKey
+			externalForeignKey,
+
+			readOnly,
+			autoload,
+
+			filters,
+			order,
 		});
 
 		this.intermediaryModel = intermediaryModel;
 	}
 
-	async select(db, obj) {
+	async select(obj) {
 		const id = obj[this.localKey];
 
 		let filters = [
@@ -192,7 +272,9 @@ export class DatabaseRelationshipManyToMany extends DatabaseRelationship {
 			})
 		];
 
-		const intermediaryResult = await this.intermediaryModel.select(db, filters);
+		const intermediaryResult = await this.intermediaryModel.select({
+			filters
+		});
 
 		if (!intermediaryResult.length) return [];
 
@@ -207,14 +289,17 @@ export class DatabaseRelationshipManyToMany extends DatabaseRelationship {
 			})
 		]);
 
-		const result = await this.externalModel.select(db, filters, this.order);
+		const result = await this.externalModel.select({
+			filters,
+			order: this.order
+		});
 
 		obj[this.property] = result;
 
 		return result;
 	}
 
-	async save(db, obj) {
+	async save(obj) {
 		const id = obj[this.localKey];
 		const data = obj[this.property];
 
@@ -236,10 +321,10 @@ export class DatabaseRelationshipManyToMany extends DatabaseRelationship {
 			})
 		];
 
-		await this.intermediaryModel.delete(db, filters);
+		await this.intermediaryModel.delete(filters);
 
 		for (const item of intermediaryData) {
-			await this.intermediaryModel.save(db, item, [], true);
+			await this.intermediaryModel.save(item, [], true);
 		}
 	}
 }

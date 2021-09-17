@@ -1,6 +1,7 @@
 import { setOrReturnKey } from '../helpers/setOrReturnKey.js';
 import { DatabaseQueryClause, DatabaseQueryComponent, DatabaseQueryCondition } from './DatabaseQueryComponent.js';
 import Entity from '../classes/Entity.js';
+import { Database } from './Database.js';
 
 export function dbBacktick(val) {
 	return `\`${val}\``;
@@ -33,18 +34,16 @@ function getWhere(filters) {
  */
 export class DatabaseModel {
 	/**
-	 * @param {mysql.Connection} connection
+	 * @param {Database} db
 	 * @param {String} table
 	 * @param {Class<Entity>} entity
 	 * @param {DatabaseField[]} fields
 	 * @param {DatabaseRelationship[]} relationships
 	 * @param {Boolean} insertWithId
 	 * @param {Boolean} updateOnDuplicate
-	 *
-	 * @return {Class<DatabaseModel<T>>}
 	 */
-	static config({
-		connection,
+	constructor({
+		db,
 		table,
 		entity = null,
 		fields = [],
@@ -52,8 +51,8 @@ export class DatabaseModel {
 		insertWithId = false,
 		updateOnDuplicate = false,
 	}) {
-		/** @type {mysql.Connection} **/
-		this.connection = connection;
+		/** @type {Database} **/
+		this.db = db;
 
 		this.table = table;
 
@@ -68,8 +67,6 @@ export class DatabaseModel {
 
 		this.insertWithId = insertWithId;
 		this.updateOnDuplicate = updateOnDuplicate;
-
-		return this;
 	}
 
 	// Main Operations
@@ -83,7 +80,7 @@ export class DatabaseModel {
 	 * @param {Boolean} insert Whether insert is to be forced
 	 * @returns {Promise<*>}
 	 */
-	static async save(obj, allowedFields = [], insert = false) {
+	async save(obj, allowedFields = [], insert = false) {
 		const pks = this.primaryKeys();
 		const exists = pks.reduce((v, pk) => v && obj[pk.name], true);
 
@@ -97,7 +94,7 @@ export class DatabaseModel {
 		if (insert || !exists || this.updateOnDuplicate) {
 			const query = this.getInsertQuery(data);
 
-			const result = await this.connection.query(query, data);
+			const result = await this.db.connection.query(query, data);
 			const [insertData] = result;
 
 			if (!this.insertWithId) {
@@ -115,7 +112,7 @@ export class DatabaseModel {
 		} else {
 			const query = this.getUpdateQuery(data);
 
-			let result = await this.connection.query(query, data);
+			let result = await this.db.connection.query(query, data);
 
 			await this.saveRelationships(obj);
 
@@ -127,13 +124,13 @@ export class DatabaseModel {
 	 * Queries the database for entries
 	 *
 	 * @param {Object} options
-	 * @param {ModelFilters} options.filters
-	 * @param {String} options.order
-	 * @param {String[]} options.fieldNames
+	 * @param {ModelFilters} [options.filters]
+	 * @param {String} [options.order]
+	 * @param {String[]} [options.fieldNames]
 	 *
 	 * @returns {T[]}
 	 */
-	static async select({
+	async select({
 		filters = [],
 		order = '',
 		fieldNames = []
@@ -152,16 +149,37 @@ export class DatabaseModel {
 		const query = this.getSelectQuery({ where, fieldNames, order	});
 		const params = where.getParams();
 
-		let [rows] = await this.connection.query(query, params);
+		let [rows] = await this.db.connection.query(query, params);
 
 		return this.entity ? rows.map(row => new this.entity(row)) : rows;
+	}
+	/**
+	 * Queries the database for entries
+	 *
+	 * @param {Object} options
+	 * @param {ModelFilters} [options.filters]
+	 * @param {String} [options.order]
+	 * @param {String[]} [options.fieldNames]
+	 *
+	 * @returns {T|null}
+	 */
+	async selectFirst({
+		filters = [],
+		order = '',
+		fieldNames = []
+	} = {}) {
+		let results = await this.select({
+			filters, order, fieldNames
+		});
+
+		return results[0] ?? null;
 	}
 
 	/**
 	 * @param {ModelId} id
 	 * @return {Promise<null|T>}
 	 */
-	static async getById(id) {
+	async getById(id) {
 		if (!Array.isArray(id)) id = [id];
 
 		const pks = this.primaryKeys();
@@ -191,7 +209,7 @@ export class DatabaseModel {
 	 * @param {T} obj
 	 * @return {Promise<boolean>}
 	 */
-	static async deleteByModel(obj) {
+	async deleteByModel(obj) {
 		const pks = this.primaryKeys();
 
 		const id = [];
@@ -207,7 +225,7 @@ export class DatabaseModel {
 	 * @param {ModelId} id
 	 * @return {Promise<boolean>}
 	 */
-	static async deleteById(id) {
+	async deleteById(id) {
 		const pks = this.primaryKeys();
 
 		if (!Array.isArray(id)) id = [id];
@@ -228,13 +246,13 @@ export class DatabaseModel {
 	 * @param {ModelFilters} filters
 	 * @return {Promise<boolean>}
 	 */
-	static async delete(filters) {
+	async delete(filters) {
 		const where = getWhere(filters);
 
 		const query = this.getDeleteQuery(where);
 		const params = where.getParams();
 
-		let [data] = await this.connection.query(query, params);
+		let [data] = await this.db.connection.query(query, params);
 
 		return !!data.affectedRows;
 	}
@@ -251,7 +269,7 @@ export class DatabaseModel {
 	 *
 	 * @returns {string}
 	 */
-	static getSelectQuery({
+	getSelectQuery({
 		where = null,
 		fieldNames = [],
 		order = ''
@@ -282,7 +300,7 @@ export class DatabaseModel {
 	 * @param {Object} data
 	 * @return {string}
 	 */
-	static getInsertQuery(data) {
+	getInsertQuery(data) {
 		const pks = this.primaryKeys();
 
 		// Clone data so as not to taint the original object
@@ -327,7 +345,7 @@ export class DatabaseModel {
 	 * @param {Object} data
 	 * @return {string}
 	 */
-	static getUpdateQuery(data) {
+	getUpdateQuery(data) {
 		const pks = this.primaryKeys();
 
 		// Clone data so as not to taint the original object
@@ -362,7 +380,7 @@ export class DatabaseModel {
 	 * @param {DatabaseQueryClause} where
 	 * @return {string}
 	 */
-	static getDeleteQuery(where) {
+	getDeleteQuery(where) {
 		if (!where) {
 			throw 'Good luck erasing the db on thine own, but not on my watch!';
 		}
@@ -374,7 +392,7 @@ export class DatabaseModel {
 	 *
 	 * @return {string}
 	 */
-	static getCreateStatement() {
+	getCreateStatement() {
 		let lines = [];
 
 		for (let field of this.fields) {
@@ -394,7 +412,7 @@ export class DatabaseModel {
 		return `CREATE TABLE ${_e(this.table)} (\n${lines.join(',\n')}\n) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;`;
 	}
 
-	static primaryKeys() {
+	primaryKeys() {
 		return this.fields.filter(f => f.primaryKey);
 	}
 
@@ -405,7 +423,7 @@ export class DatabaseModel {
 	 * @param {T} obj2
 	 * @return {boolean}
 	 */
-	static compareByPK(obj1, obj2) {
+	compareByPK(obj1, obj2) {
 		const pks = this.primaryKeys();
 
 		for (let pk of pks) {
@@ -422,11 +440,11 @@ export class DatabaseModel {
 	 * @param {DatabaseRelationship[]} relationships
 	 * @return {Promise<void>}
 	 */
-	static async selectRelationships(obj, relationships = null) {
+	async selectRelationships(obj, relationships = null) {
 		if (!relationships) relationships = this.relationships.filter(r => r.autoload());
 
 		for (const relationship of relationships) {
-			await relationship.select(this.connection, obj);
+			await relationship.select(obj);
 		}
 	}
 
@@ -435,11 +453,11 @@ export class DatabaseModel {
 	 * @param {DatabaseRelationship[]} relationships
 	 * @return {Promise<void>}
 	 */
-	static async saveRelationships(obj, relationships = null) {
+	async saveRelationships(obj, relationships = null) {
 		if (!relationships) relationships = this.relationships.filter(r => !r.readonly());
 
 		for (const relationship of relationships) {
-			await relationship.save(this.connection, obj);
+			await relationship.save(obj);
 		}
 	}
 }

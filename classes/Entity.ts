@@ -481,7 +481,7 @@ export class Entity extends Emitter {
 	static GetFields(target: Entity): BaseField<any, any>[] {
 		let constructor = target.constructor as any;
 
-		if (!constructor._fieldCache) {
+		if (!constructor.hasOwnProperty('_fieldCache')) {
 			let fields: BaseField<any, any>[] = [];
 
 			let focus = (target as any).__proto__;
@@ -497,7 +497,10 @@ export class Entity extends Emitter {
 				focus = focus.__proto__;
 			}
 
-			constructor._fieldCache = fields;
+			Object.defineProperty(constructor, '_fieldCache', {
+				enumerable: false,
+				value: fields
+			});
 		}
 
 		return constructor._fieldCache;

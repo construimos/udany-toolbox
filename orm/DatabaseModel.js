@@ -1,6 +1,6 @@
 import { setOrReturnKey } from '../helpers/setOrReturnKey.js';
 import { DatabaseQueryClause, DatabaseQueryComponent, DatabaseQueryCondition } from './DatabaseQueryComponent.js';
-import Entity from '../classes/Entity.js';
+import Entity from '../classes/Entity.ts';
 import { Database } from './Database.js';
 
 export function dbBacktick(val) {

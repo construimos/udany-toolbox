@@ -1,3 +1,17 @@
+import { Dictionary } from '../interfaces';
+
+const specials = [
+	'/', '.', '*', '+', '?', '|',
+	'(', ')', '[', ']', '{', '}', '\\'
+];
+const escapeRegex = new RegExp(
+	'(\\' + specials.join('|\\') + ')', 'g'
+);
+
+RegExp.escape = function(text) {
+	return text.replace(escapeRegex, '\\$1');
+}
+
 /**
  * Pads a string (e.g.: "9" may become "009" and "10" "010").
  * @param character
@@ -5,7 +19,7 @@
  * @param [right]
  * @returns {String}
  */
-String.prototype.pad = function (character, size, right) {
+String.prototype.pad = function (character, size, right = false): string {
 	let s = this + '';
 	if (!right) {
 		while (s.length < size) s = character + s;
@@ -15,7 +29,7 @@ String.prototype.pad = function (character, size, right) {
 	return s;
 };
 
-String.prototype.format = function (values, pattern) {
+String.prototype.format = function (values: Dictionary<string>, pattern: ((key: string) => string) | string) {
 	if (!pattern) {
 		pattern = (key) => `{${key}}`;
 	}
@@ -31,7 +45,7 @@ String.prototype.format = function (values, pattern) {
 			}
 
 			final = final.replace(
-				new RegExp(RegExp.escape(match), 'g'),
+				new RegExp(RegExp.escape(match as string), 'g'),
 				values[i]
 			);
 		}

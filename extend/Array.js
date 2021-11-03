@@ -1,4 +1,4 @@
-import {Emitter} from '../classes/Emitter.js'
+import {Emitter} from '../classes/Emitter.ts'
 
 if (Object.getOwnPropertyDescriptor(Array.prototype, 'push').writable) {
 	// Makes array an event emitter

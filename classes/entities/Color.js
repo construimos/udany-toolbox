@@ -1,4 +1,4 @@
-import Entity from '../Entity';
+import { Entity } from '../Entity.ts';
 
 function hue2rgb(p, q, t){
 	if(t < 0) t += 1;

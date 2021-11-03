@@ -1,0 +1,9 @@
+{
+	"compilerOptions": {
+		"module": "CommonJS",
+		"target": "ES2018",
+		"experimentalDecorators": true
+	},
+	"include": ["**/*.ts"],
+	"exclude": []
+}

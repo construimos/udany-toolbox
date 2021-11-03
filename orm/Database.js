@@ -1,5 +1,5 @@
 import mysql from 'mysql2/promise';
-import Emitter from '../classes/Emitter.js';
+import Emitter from '../classes/Emitter.ts';
 import { queryFormat } from './queryFormat.js';
 
 export class Database extends Emitter {

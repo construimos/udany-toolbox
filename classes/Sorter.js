@@ -1,4 +1,4 @@
-import Emitter from './Emitter.js';
+import Emitter from './Emitter.ts';
 
 class Sorter extends Emitter {
 	constructor(compareFn, direction = 0, priority = 0) {

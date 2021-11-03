@@ -1,5 +1,5 @@
 import './Object'
-import './String'
-import './Number'
+import './String.ts'
+import './Number.ts'
 import './Array'
 import './Date'

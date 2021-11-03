@@ -1,8 +1,8 @@
 export class HasUniqueId {
-	constructor() {
-	}
+	static counter:number = 0;
+	__uid:string;
 
-	getUniqueId() {
+	getUId() {
 		if (!this.__uid) {
 			HasUniqueId.counter++;
 			const now = Date.now();
@@ -12,7 +12,5 @@ export class HasUniqueId {
 		return this.__uid;
 	}
 }
-
-HasUniqueId.counter = 0;
 
 export default HasUniqueId;

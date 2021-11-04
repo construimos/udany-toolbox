@@ -396,13 +396,6 @@ export class Entity extends Emitter {
 	declare static _fieldCache: BaseField<any, any>[];
 	static namespace: string;
 
-	constructor(data) {
-		super();
-
-		this.$define();
-		this.$fill(data);
-	}
-
 	get $class() {
 		return (this.constructor as typeof Entity).class;
 	}
@@ -425,9 +418,11 @@ export class Entity extends Emitter {
 		}
 	}
 
-	$fill(a: any) {
+	$fill(a: any): this {
 		if (!a) a = [];
 		if (a instanceof Entity) a = a.$serialize();
+
+		this.$define();
 
 		for (let field of this.$fields) {
 			let name = field.name;
@@ -441,6 +436,8 @@ export class Entity extends Emitter {
 		}
 
 		this.emit('fill');
+
+		return this;
 	}
 
 	$serialize(safeOnly = false, include = []) {
@@ -615,6 +612,10 @@ export class Entity extends Emitter {
 		Entity.Map.register(this, this.class);
 	}
 
+	static new<T extends Entity>(this: Constructor<T>, a): T {
+		return (new this()).$fill(a);
+	}
+
 	static FromObject(a) {
 		if (!a) {
 			return null;
@@ -630,7 +631,7 @@ export class Entity extends Emitter {
 			throw 'Couldn\'t locate class within current scope, make sure the script defining the class: ' + a.__class;
 		}
 
-		return new C(a);
+		return (new C()).$fill(a);
 	}
 
 	static FromArray(array, entity) {

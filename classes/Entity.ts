@@ -527,7 +527,7 @@ export class Entity extends Emitter {
 
 	$clone(): this {
 		let data = JSON.parse(JSON.stringify(this.$serialize()));
-		return new (this.constructor as typeof Entity)(data) as this;
+		return (this.constructor as typeof Entity).new(data) as this;
 	}
 
 	$equals(obj: this): boolean {
@@ -634,14 +634,14 @@ export class Entity extends Emitter {
 		return (new C()).$fill(a);
 	}
 
-	static FromArray(array, entity) {
+	static FromArray(array, entity?) {
 		let r = [];
 		for (let i in array) {
 			if (array.hasOwnProperty(i)) {
 				if (entity) {
-					r[i] = new entity(this[i]);
+					r[i] = new entity().$fill(array[i]);
 				} else {
-					r[i] = Entity.FromObject(this[i]);
+					r[i] = Entity.FromObject(array[i]);
 				}
 			}
 		}

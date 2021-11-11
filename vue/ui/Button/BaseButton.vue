@@ -8,8 +8,8 @@
 
 		<slot/>
 
-		<InlineTooltip top v-if="title" :timeout="500">
-			<slot name="tooltip">{{title}}</slot>
+		<InlineTooltip top v-if="tooltip" :timeout="500">
+			<slot name="tooltip">{{tooltip}}</slot>
 		</InlineTooltip>
 
 		<slot name="anchor"/>
@@ -33,7 +33,7 @@
 				type: Boolean,
 				default: false
 			},
-			title: {
+			tooltip: {
 				type: String,
 				default: ''
 			},

@@ -77,17 +77,6 @@ class BaseField<I, O> implements FieldOptions<I, O> {
 				target[this.privateKey] = value;
 
 				target.emit('set', [this, value, old]);
-
-				if (value instanceof Array) {
-					target.$proxyArrayEvents(value, this);
-				}
-
-				if (old instanceof Array) {
-					target.$unProxyArrayEvents(old);
-				}
-
-				target.emit('list-remove', [this, ...old.filter(x => value.indexOf(x) !== -1)]);
-				target.emit('list-add', [this, ...value.filter(x => old.indexOf(x) !== -1)]);
 			}
 		} else {
 			descriptor.value = null;
@@ -564,32 +553,6 @@ export class Entity extends Emitter {
 				field.applyDelta(this, delta[field.name]);
 			}
 		}
-	}
-
-	$proxyArrayEvents(array: Array<any>, field: BaseField<any, any>) {
-		let uid = this.getUId();
-
-		array.onAny((eventName: string, ...args) => {
-			this.emit('list-change', [eventName, field, ...args]);
-		}, uid);
-
-		array.on('add', (...args) => {
-			this.emit('list-add', [field, ...args]);
-		}, uid);
-
-		array.on('remove', (...args) => {
-			this.emit('list-remove', [field, ...args]);
-		}, uid);
-	}
-
-	$unProxyArrayEvents(array: Array<any>) {
-		let uid = this.getUId();
-
-		array.offAny(uid);
-
-		array.off('add', uid);
-
-		array.off('remove', uid);
 	}
 
 	static Map = {

@@ -1,15 +1,4 @@
-import {Emitter} from '../classes/Emitter.ts'
-
 if (Object.getOwnPropertyDescriptor(Array.prototype, 'push').writable) {
-	// Makes array an event emitter
-	let descriptors = Object.getOwnPropertyDescriptors(Emitter.prototype);
-
-	for (let key of Object.keys(descriptors)) {
-		if (key === 'constructor') continue;
-
-		Object.defineProperty(Array.prototype, key, descriptors[key]);
-	}
-
 	// Utility functions
 	Array.prototype.selfConcat = function () {
 		for (let i = 0; i < arguments.length; i++) {
@@ -73,27 +62,12 @@ if (Object.getOwnPropertyDescriptor(Array.prototype, 'push').writable) {
 				}
 			}
 
-			this.emit('add', [items]);
-
 			return this.super_push(...items);
-		};
-
-		Array.prototype.super_splice = Array.prototype.splice;
-		Array.prototype.splice = function (...args) {
-			let removed = this.super_splice(...args);
-
-			if (removed.length) {
-				this.emit('remove', [removed]);
-			}
-
-			return removed;
 		};
 	}
 
 	Array.prototype.insertAt = function (index, value) {
 		this.splice(index, 0, value);
-
-		this.emit('add', [[value]]);
 
 		return this;
 	};

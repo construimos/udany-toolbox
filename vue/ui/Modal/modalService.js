@@ -144,12 +144,12 @@ export const modalService = reactive({
 });
 
 
-export function confirm({
+export async function confirm({
 	message = '',
 	title = 'Confirm',
 	confirmLabel = 'Ok',
 	cancelLabel = 'Cancel',
-}) {
+} = {}) {
 	return new Promise((accept) => {
 		modalService.new({
 			component: ConfirmModal,

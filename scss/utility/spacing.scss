@@ -1,0 +1,32 @@
+$property-prefixes: ("margin": "m", "padding": "p");
+
+@each $property, $prefix in $property-prefixes {
+	@for $i from 1 through 5 {
+		.#{$prefix}-#{$i} {
+			#{$property}: var(--spacer-#{$i});
+		}
+
+		.#{$prefix}x-#{$i} {
+			#{$property}-left: var(--spacer-#{$i});
+			#{$property}-right: var(--spacer-#{$i});
+		}
+
+		.#{$prefix}y-#{$i} {
+			#{$property}-top: var(--spacer-#{$i});
+			#{$property}-bottom: var(--spacer-#{$i});
+		}
+
+		.#{$prefix}t-#{$i} {
+			#{$property}-top: var(--spacer-#{$i});
+		}
+		.#{$prefix}b-#{$i} {
+			#{$property}-bottom: var(--spacer-#{$i});
+		}
+		.#{$prefix}s-#{$i} {
+			#{$property}-left: var(--spacer-#{$i});
+		}
+		.#{$prefix}e-#{$i} {
+			#{$property}-right: var(--spacer-#{$i});
+		}
+	}
+}

@@ -1,77 +1,79 @@
-import { Entity } from '../Entity.ts';
+import { Entity } from '../Entity';
 
-/**
- * @name Vector
- * @property {Number} x
- * @property {Number} y
- * @property {Number} z
- */
+declare type Coordinates = [number, number, number?];
+declare type VectorData = {x: number, y: number, z?: number};
+
 export class Vector extends Entity {
-	/**
-	 * @param {...number|Vector|{x: number, y: number, [z]: number}} values
-	 * @returns {Vector} itself
-	 */
-    add(...values) {
+	@Entity.Field.Float()
+	x: number;
+
+	@Entity.Field.Float()
+	y: number;
+
+	@Entity.Field.Float()
+	z?: number;
+
+    add(...values: Coordinates | VectorData[] | Vector[]): this {
         if (
         	values.length === 1 &&
 	        values[0].hasOwnProperty('x') &&
 	        values[0].hasOwnProperty('y')
         ) {
-            return this.add(values[0].x, values[0].y, values[0].z);
+        	let vectors = values as Vector[];
+
+			vectors.forEach(v => this.add(v.x, v.y, v.z));
         } else {
-            this.x += values[0];
-	        this.y += values[1];
-	        if (values[2] !== undefined) this.z += values[2];
+			let floats = values as Coordinates;
+
+            this.x += floats[0];
+	        this.y += floats[1];
+	        if (values[2] !== undefined) this.z += floats[2];
         }
 
         return this;
     }
 
-	/**
-	 * @param {...number|Vector|{x: number, y: number, [z]: number}} ratios
-	 * @returns {Vector} itself
-	 */
-	scale(...ratios) {
+	scale(...ratios: number[] | Vector[]): this {
 	    if (
 		    ratios.length === 1 &&
 		    ratios[0].hasOwnProperty('x') &&
 		    ratios[0].hasOwnProperty('y')
 	    ) {
-		    return this.scale(ratios[0].x, ratios[0].y, ratios[0].z);
-	    }
+			let vectors = ratios as Vector[];
 
-    	if (ratios.length === 1) {
-		    this.x *= ratios[0];
-		    this.y *= ratios[0];
-		    this.z *= ratios[0];
+			vectors.forEach(v => this.scale(v.x, v.y, v.z));
 	    } else {
-		    this.x *= ratios[0];
-		    this.y *= ratios[1];
-		    if (ratios[2] !== undefined) this.z *= ratios[2];
-	    }
+			let floats = ratios as number[];
+
+			if (floats.length === 1) {
+				this.x *= floats[0];
+				this.y *= floats[0];
+				this.z *= floats[0];
+			} else if (floats.length > 1) {
+				this.x *= floats[0];
+				this.y *= floats[1];
+				if (floats[2] !== undefined) this.z *= floats[2];
+			}
+		}
 
         return this;
     }
 
-	/**
-	 *
-	 * @param {Number[][]} matrix 2x2 or 3x3 transformation matrix
-	 */
-	transform(matrix) {
+	transform(matrix: [Coordinates, Coordinates, Coordinates?]): Vector {
 		if (matrix[0].length === 2) {
 			matrix[0][2] = 0;
 			matrix[1][2] = 0;
 			matrix[2][2] = 1;
 		}
 
-		return new Vector([
+		return new Vector().$fill([
 			(this.x * matrix[0][0]) + (this.y * matrix[0][1]) + (this.z * matrix[0][2]),
 			(this.x * matrix[1][0]) + (this.y * matrix[1][1]) + (this.z * matrix[1][2]),
 			(this.x * matrix[2][0]) + (this.y * matrix[2][1]) + (this.z * matrix[2][2]),
-		])
+		]);
     }
 
-	rotateX(angle) {
+	rotateX(angle: number): Vector {
 		return this.transform([
 			[1, 0, 0],
 			[0, Math.cos(angle), -Math.sin(angle)],
@@ -79,7 +81,7 @@ export class Vector extends Entity {
 		]);
 	}
 
-	rotateY(angle) {
+	rotateY(angle: number): Vector {
 		return this.transform([
 			[Math.cos(angle), 0, Math.sin(angle)],
 			[0, 1, 0],
@@ -87,7 +89,7 @@ export class Vector extends Entity {
 		]);
 	}
 
-	rotateZ(angle) {
+	rotateZ(angle: number): Vector {
 		return this.transform([
 			[Math.cos(angle), -Math.sin(angle), 0],
 			[Math.sin(angle), Math.cos(angle), 0],
@@ -95,21 +97,15 @@ export class Vector extends Entity {
 		]);
 	}
 
-	/**
-	 * @param {number[]|Vector|{x: number, y: number, [z]: number}} a
-	 * @returns {Vector} itself
-	 */
-    set(a) {
-    	this.FillFromArray(a);
-
-    	return this;
+    set(a): this {
+		return this.$fill(a);
     }
 
-    Serialize() {
+	$serialize(safeOnly = false, include = []) {
         return [this.x, this.y, this.z];
     }
 
-    FillFromArray(a) {
+	$fill(a: Coordinates | VectorData | any): this {
         if (a.hasOwnProperty('x')) {
             this.x = a.x;
 	        this.y = a.y;
@@ -119,14 +115,11 @@ export class Vector extends Entity {
             this.y = a[1];
 	        this.z = a[2] !== undefined ? a[2] : 0;
         }
+
+        return this;
     }
 }
 
 Vector.Register();
-Vector.Attributes = [
-    new Entity.Attributes.Float('x'),
-    new Entity.Attributes.Float('y'),
-	new Entity.Attributes.Float('z')
-];
 
 export default Vector;

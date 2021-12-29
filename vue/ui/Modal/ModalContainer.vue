@@ -1,5 +1,5 @@
 <template>
-	<div class="modals-container">
+	<div class="modals-container" v-if="service">
 		<Dimmer
 			:show="!!service.selected"
 			@mousedown.stop="onOverlayClick"
@@ -26,15 +26,17 @@
 </template>
 
 <script>
-	import { modalService } from './modalService.js';
 	import Dimmer from '../Dimmer/Dimmer.vue';
 
 	export default {
 		name: 'ModalContainer',
 		components: { Dimmer },
-		data: () => ({
-			service: modalService
-		}),
+		props: {
+			service: {
+				type: Object,
+				required: true
+			}
+		},
 		methods: {
 			onOverlayClick() {
 				if (this.service.selected.closeOnClickOutside) {

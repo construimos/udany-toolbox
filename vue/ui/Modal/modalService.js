@@ -1,5 +1,4 @@
 import { reactive, markRaw } from 'vue';
-import ConfirmModal from './Confirm/ConfirmModal.vue';
 
 /**
  * @typedef {String} ModalSize
@@ -150,7 +149,9 @@ export async function confirm({
 	confirmLabel = 'Ok',
 	cancelLabel = 'Cancel',
 } = {}) {
-	return new Promise((accept) => {
+	return new Promise(async (accept) => {
+		let ConfirmModal = (await import('./Confirm/ConfirmModal.vue')).default;
+
 		modalService.new({
 			component: ConfirmModal,
 			attributes: {

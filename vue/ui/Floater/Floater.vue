@@ -39,7 +39,7 @@
 		transform: translate(var(--x), var(--y));
 		z-index: 1;
 
-		&::v-deep(*) {
+		&::v-deep(> *) {
 			pointer-events: all;
 		}
 	}

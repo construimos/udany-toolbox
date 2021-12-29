@@ -47,13 +47,17 @@
 
 <style lang="scss" scoped>
 	.base-button {
+		--button-background-i: var(--button-background, rgba(255, 255, 255, 0));
+		--button-background-focus-i: var(--button-background-focus, rgba(255, 255, 255, 0.08));
+		--button-background-hover-i: var(--button-background-hover, rgba(255, 255, 255, 0.12));
+
 		border: none;
 		border-radius: 2px;
 
 		position: relative;
 
 		transition: all .3s;
-		background-color: rgba(255, 255, 255, 0);
+		background-color: var(--button-background-i);
 
 		cursor: pointer;
 
@@ -62,13 +66,13 @@
 		padding: var(--spacer-1) var(--spacer-2);
 
 		&:focus {
-			background-color: rgba(255, 255, 255, 0.08);
+			background-color: var(--button-background-focus-i);
 			box-shadow: 0 1px 9px rgba(6, 6, 17, 0.5);
 			outline: none;
 		}
 
 		&:hover {
-			background-color: rgba(255, 255, 255, 0.1);
+			background-color: var(--button-background-hover-i);
 			box-shadow: 0 1px 9px rgba(6, 6, 17, 0.5);
 		}
 

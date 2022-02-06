@@ -1,5 +1,5 @@
 import { setOrReturnKey } from '../helpers/setOrReturnKey.js';
-import { DatabaseQueryCondition } from './DatabaseQueryComponent';
+import { DatabaseQueryCondition } from './DatabaseQueryComponent.ts';
 
 /**
  * @name DatabaseRelationship

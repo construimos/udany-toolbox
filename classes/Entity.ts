@@ -141,7 +141,7 @@ class StringField extends BaseField<string, string> {
 	constructor(o: StringFieldOptions) {
 		super(o);
 
-		this.serialize = o.serialize || ((value: any) => value.toString());
+		this.serialize = o.serialize || ((value: any) => value ? value.toString() : '');
 		this.deserialize = o.deserialize || ((value: any) => value.toString());
 	}
 }
@@ -436,7 +436,7 @@ export class Entity extends Emitter {
 
 		for (let field of this.$fields) {
 			if (!field.serializable) continue;
-			if (include.indexOf(field.name) === -1) continue;
+			if (include.length && include.indexOf(field.name) === -1) continue;
 
 			if (!safeOnly || field.safe) {
 				result[field.name] = field.get(this, safeOnly);

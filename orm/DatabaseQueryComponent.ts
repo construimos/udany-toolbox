@@ -1,32 +1,26 @@
 import {dbBacktick} from "./DatabaseModel";
 
-export class DatabaseQueryComponent {
-	getClause() {
-		return '';
-	}
+export type ComparisonOperator = '=' | '!=' | '>=' | '<=' | '>' | '<' | 'LIKE' | 'IN';
+export type LogicOperator = 'OR' | 'AND';
 
-	getParams() {
-		return {};
-	}
+
+export abstract class DatabaseQueryComponent {
+	abstract getClause(): string;
+	abstract getParams(): Record<any, any>;
 }
 
-export class DatabaseQueryClause extends DatabaseQueryComponent {
-	/**
-	 * @param {DatabaseQueryComponent[]} clauses
-	 * @param mode
-	 */
-	constructor(clauses, mode = "OR") {
-		super();
+export class DatabaseQueryClause implements DatabaseQueryComponent {
+	clauses: DatabaseQueryComponent[];
+	mode: string;
 
-		/** @type {DatabaseQueryComponent[]} **/
+	constructor(clauses: DatabaseQueryComponent[], mode:LogicOperator = "OR") {
+		/** @type {} **/
 		this.clauses = clauses || [];
-
 		this.mode = mode;
 	}
 
 	getClause() {
 		let clauses = this.clauses.map(c => `(${c.getClause()})`);
-
 		return clauses.join(` ${this.mode} `);
 	}
 
@@ -38,23 +32,25 @@ export class DatabaseQueryClause extends DatabaseQueryComponent {
 	}
 }
 
+export interface DatabaseQueryConditionOptions {
+	column: string;
+	values: any | Record<any, any>;
+	operator?: ComparisonOperator;
+	mode?: LogicOperator;
+	boundParameter?: string;
+	bound?: boolean;
+	escapeColumn?: boolean;
+}
 
-/**
- * @typedef {Object} DatabaseQueryConditionOptions
- *
- * @property {String} column
- * @property {Object|Object[]} values
- * @property {'='|'!='|'>='|'<='|'>'|'<'|'LIKE'|'IN'} [operator]
- * @property {'OR'|'AND'} [mode]
- * @property {String} [boundParameter]
- * @property {Boolean} [bound]
- * @property {Boolean} [escapeColumn]
- */
+export class DatabaseQueryCondition implements DatabaseQueryConditionOptions, DatabaseQueryComponent {
+	column: string;
+	values: any | Record<any, any>;
+	operator: ComparisonOperator;
+	mode: LogicOperator;
+	boundParameter: string;
+	bound: boolean;
+	escapeColumn: boolean;
 
-export class DatabaseQueryCondition extends DatabaseQueryComponent {
-	/**
-	 * @param {DatabaseQueryConditionOptions} options
-	 */
 	constructor({
 		column,
 		values,
@@ -63,9 +59,7 @@ export class DatabaseQueryCondition extends DatabaseQueryComponent {
 		bound = true,
 		boundParameter = '',
 		escapeColumn = true
-	}) {
-		super();
-
+	}:DatabaseQueryConditionOptions) {
 		this.column = column;
 		this.values = Array.isArray(values) ? values : [values];
 		this.operator = operator;
@@ -79,7 +73,7 @@ export class DatabaseQueryCondition extends DatabaseQueryComponent {
 		return (this.boundParameter || this.column) + i;
 	}
 
-	getClause() {
+	getClause(): string {
 		let clauses = [];
 
 		for (let i = 0; i < this.values.length; i++) {
@@ -99,7 +93,7 @@ export class DatabaseQueryCondition extends DatabaseQueryComponent {
 		return clauses.join(` ${this.mode} `)
 	}
 
-	getParams() {
+	getParams(): Record<any, any> {
 		let params = {};
 
 		for (let i = 0; i < this.values.length; i++) {

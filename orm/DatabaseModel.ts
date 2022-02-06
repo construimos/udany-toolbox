@@ -1,47 +1,50 @@
-import { setOrReturnKey } from '../helpers/setOrReturnKey.js';
-import { DatabaseQueryClause, DatabaseQueryComponent, DatabaseQueryCondition } from './DatabaseQueryComponent.js';
-import Entity from '../classes/Entity.ts';
-import { Database } from './Database.js';
+import { Entity } from '../classes/Entity';
+import { Database } from './Database';
+import { Constructor } from '../interfaces';
+import { DatabaseRelationship } from './DatabaseRelationship';
+
+import {
+	DatabaseQueryClause,
+	DatabaseQueryComponent,
+	DatabaseQueryCondition,
+	DatabaseQueryConditionOptions
+} from './DatabaseQueryComponent';
+
+import { OkPacket, RowDataPacket } from 'mysql2';
 
 export function dbBacktick(val) {
 	return `\`${val}\``;
 }
 const _e = dbBacktick;
 
-/**
- * @typedef {Number|String|(Number|String)[]} ModelId
- */
+declare type ModelId = Number|String|(Number|String)[];
+declare type ModelFilters = DatabaseQueryComponent[] | DatabaseQueryConditionOptions[];
 
-/**
- * @typedef {DatabaseQueryComponent[]|DatabaseQueryConditionOptions[]} ModelFilters
- */
-
-/**
- *
- * @param {ModelFilters} filters
- * @return {DatabaseQueryClause}
- */
-function getWhere(filters) {
-	filters = filters.map(f => f instanceof DatabaseQueryComponent ? f : new DatabaseQueryCondition(f));
+function getWhere(filters: ModelFilters): DatabaseQueryClause {
+	filters = filters.map(f => (f instanceof DatabaseQueryComponent) ? f : new DatabaseQueryCondition(f));
 
 	return new DatabaseQueryClause(filters, 'AND');
 }
 
-/**
- * @class DatabaseModel<T>
- *
- * @template {Entity} T
- */
-export class DatabaseModel {
-	/**
-	 * @param {Database} db
-	 * @param {String} table
-	 * @param {Class<Entity>} entity
-	 * @param {DatabaseField[]} fields
-	 * @param {DatabaseRelationship[]} relationships
-	 * @param {Boolean} insertWithId
-	 * @param {Boolean} updateOnDuplicate
-	 */
+export interface DatabaseModelOptions<T extends Entity> {
+	db: Database;
+	table: string;
+	entity: Constructor<T>;
+	fields: DatabaseField[];
+	relationships: DatabaseRelationship[];
+	insertWithId: boolean;
+	updateOnDuplicate: boolean;
+}
+
+export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> {
+	db: Database;
+	table: string;
+	entity: Constructor<T>;
+	fields: DatabaseField[];
+	relationships: DatabaseRelationship[];
+	insertWithId: boolean;
+	updateOnDuplicate: boolean;
+
 	constructor({
 		db,
 		table,
@@ -50,37 +53,21 @@ export class DatabaseModel {
 		relationships = [],
 		insertWithId = false,
 		updateOnDuplicate = false,
-	}) {
-		/** @type {Database} **/
+	}: DatabaseModelOptions<T>) {
 		this.db = db;
-
 		this.table = table;
-
-		/** @type {Class<Entity>} **/
 		this.entity = entity;
-
-		/** @type {DatabaseField[]} **/
 		this.fields = fields;
-
-		/** @type {DatabaseRelationship[]} **/
 		this.relationships = relationships;
-
 		this.insertWithId = insertWithId;
 		this.updateOnDuplicate = updateOnDuplicate;
 	}
 
-	// Main Operations
-
 	/**
 	 * Saves the model object to the database, either inserting or updating a row.
 	 * In case the model has no id, the generated id on insertion will be set on the model object
-	 *
-	 * @param {T} obj Entity instance
-	 * @param {String[]} allowedFields List of allowed fields
-	 * @param {Boolean} insert Whether insert is to be forced
-	 * @returns {Promise<*>}
 	 */
-	async save(obj, allowedFields = [], insert = false) {
+	async save(obj: T, allowedFields = [], insert = false) {
 		const pks = this.primaryKeys();
 		const exists = pks.reduce((v, pk) => v && obj[pk.name], true);
 
@@ -94,8 +81,8 @@ export class DatabaseModel {
 		if (insert || !exists || this.updateOnDuplicate) {
 			const query = this.getInsertQuery(data);
 
-			const result = await this.db.connection.query(query, data);
-			const [insertData] = result;
+			const [result] = await this.db.connection.query(query, data);
+			const insertData = result as OkPacket;
 
 			if (!this.insertWithId) {
 				if (insertData.insertId) {
@@ -120,25 +107,19 @@ export class DatabaseModel {
 		}
 	}
 
-	/**
-	 * Queries the database for entries
-	 *
-	 * @param {Object} options
-	 * @param {ModelFilters} [options.filters]
-	 * @param {String} [options.order]
-	 * @param {String[]} [options.fieldNames]
-	 *
-	 * @returns {T[]}
-	 */
 	async select({
 		filters = [],
 		order = '',
 		fieldNames = []
-	} = {}) {
+	}: {
+		filters?: ModelFilters,
+		order?: string,
+		fieldNames?: string[]
+	} = {}): Promise<T[] | RowDataPacket[]> {
 		if (!filters.length) {
 			filters.push(new DatabaseQueryCondition({
 				values: 1,
-				column: 1,
+				column: '1',
 				bound: false,
 				escapeColumn: false
 			}));
@@ -151,35 +132,26 @@ export class DatabaseModel {
 
 		let [rows] = await this.db.connection.query(query, params);
 
-		return this.entity ? rows.map(row => new this.entity(row)) : rows;
+		return this.entity ? (rows as RowDataPacket[]).map(row => new this.entity().$fill(row)) : rows as RowDataPacket[];
 	}
-	/**
-	 * Queries the database for entries
-	 *
-	 * @param {Object} options
-	 * @param {ModelFilters} [options.filters]
-	 * @param {String} [options.order]
-	 * @param {String[]} [options.fieldNames]
-	 *
-	 * @returns {T|null}
-	 */
+
 	async selectFirst({
 		filters = [],
 		order = '',
 		fieldNames = []
-	} = {}) {
+	}: {
+		filters?: ModelFilters,
+		order?: string,
+		fieldNames?: string[]
+	} = {}): Promise<T|null> {
 		let results = await this.select({
 			filters, order, fieldNames
 		});
 
-		return results[0] ?? null;
+		return results[0] as (T|null) ?? null;
 	}
 
-	/**
-	 * @param {ModelId} id
-	 * @return {Promise<null|T>}
-	 */
-	async getById(id) {
+	async getById(id: ModelId): Promise<T|null> {
 		if (!Array.isArray(id)) id = [id];
 
 		const pks = this.primaryKeys();
@@ -192,10 +164,10 @@ export class DatabaseModel {
 			});
 		}
 
-		let result = await this.select({ filters });
+		let results = await this.select({ filters });
 
-		if (result.length) {
-			result = result[0];
+		if (results.length) {
+			let result = results[0] as (T|null);
 
 			await this.selectRelationships(result);
 
@@ -205,11 +177,7 @@ export class DatabaseModel {
 		return null;
 	}
 
-	/**
-	 * @param {T} obj
-	 * @return {Promise<boolean>}
-	 */
-	async deleteByModel(obj) {
+	async deleteByModel(obj: T): Promise<boolean> {
 		const pks = this.primaryKeys();
 
 		const id = [];
@@ -221,11 +189,7 @@ export class DatabaseModel {
 		return this.deleteById(id);
 	}
 
-	/**
-	 * @param {ModelId} id
-	 * @return {Promise<boolean>}
-	 */
-	async deleteById(id) {
+	async deleteById(id: ModelId): Promise<boolean>  {
 		const pks = this.primaryKeys();
 
 		if (!Array.isArray(id)) id = [id];
@@ -242,24 +206,19 @@ export class DatabaseModel {
 		return this.delete(filters);
 	}
 
-	/**
-	 * @param {ModelFilters} filters
-	 * @return {Promise<boolean>}
-	 */
-	async delete(filters) {
+	async delete(filters: ModelFilters): Promise<boolean> {
 		const where = getWhere(filters);
 
 		const query = this.getDeleteQuery(where);
 		const params = where.getParams();
 
-		let [data] = await this.db.connection.query(query, params);
+		let [data] = await this.db.connection.query(query, params) as OkPacket[];
 
 		return !!data.affectedRows;
 	}
 
 
 	// QUERIES
-
 	/**
 	 * Returns the select query with the given params
 	 *
@@ -281,7 +240,7 @@ export class DatabaseModel {
 		if (!where) {
 			where = new DatabaseQueryCondition({
 				values: 1,
-				column: 1,
+				column: '1',
 				bound: false,
 				escapeColumn: false
 			});
@@ -412,7 +371,7 @@ export class DatabaseModel {
 		return `CREATE TABLE ${_e(this.table)} (\n${lines.join(',\n')}\n) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;`;
 	}
 
-	primaryKeys() {
+	primaryKeys(): DatabaseField[] {
 		return this.fields.filter(f => f.primaryKey);
 	}
 
@@ -462,26 +421,37 @@ export class DatabaseModel {
 	}
 }
 
-/**
- * @typedef {Object} DatabaseFieldOptions
- *
- * @property {String} name
- * @property {String} type
- * @property {Number} length
- * @property {Boolean} unsigned
- * @property {Boolean} nullable
- * @property {Object} defaultValue
- * @property {Boolean} autoIncrement
- * @property {Boolean} primaryKey
- * @property {Boolean} unique
- * @property {String} [column]
- */
+export interface DatabaseFieldOptions {
+	name: string;
+	column?: string;
+	type: string;
+	length: number;
+	unsigned: boolean;
+	nullable: boolean;
+	defaultValue: any;
+	autoIncrement: boolean;
+	primaryKey: boolean;
+	unique: boolean;
 
+	getFunction?: Function;
+	setFunction?: Function;
+}
 
-export class DatabaseField {
-	/**
-	 * @param {DatabaseFieldOptions} options
-	 */
+export class DatabaseField implements DatabaseFieldOptions {
+	name: string;
+	column?: string;
+	type: string;
+	length: number;
+	unsigned: boolean;
+	nullable: boolean;
+	defaultValue: any;
+	autoIncrement: boolean;
+	primaryKey: boolean;
+	unique: boolean;
+
+	getFunction: Function;
+	setFunction: Function;
+
 	constructor({
 		name,
 		type,
@@ -492,8 +462,10 @@ export class DatabaseField {
 		autoIncrement = false,
 		primaryKey = false,
 		unique = false,
-		column = null
-	}) {
+		column = null,
+		getFunction = null,
+		setFunction = null,
+	}: DatabaseFieldOptions) {
 		this.name = name;
 		this.type = type;
 		this.length = length;
@@ -506,41 +478,9 @@ export class DatabaseField {
 		this.column = column ? column : name;
 
 		/** @type {Function} */
-		this.getFunction = null;
+		this.getFunction = getFunction;
 		/** @type {Function} */
-		this.setFunction = null;
-	}
-
-	setType(v) {
-		return this._setOrReturnKey('type', v);
-	}
-
-	setPrimaryKey(v) {
-		return this._setOrReturnKey('primaryKey', v);
-	}
-
-	setUnsigned(v) {
-		return this._setOrReturnKey('unsigned', v);
-	}
-
-	setNullable(v) {
-		return this._setOrReturnKey('nullable', v);
-	}
-
-	setLength(v) {
-		return this._setOrReturnKey('length', v);
-	}
-
-	setDefault(v) {
-		return this._setOrReturnKey('defaultValue', v);
-	}
-
-	setAutoIncrement(v) {
-		return this._setOrReturnKey('autoIncrement', v);
-	}
-
-	setUnique(v) {
-		return this._setOrReturnKey('unique', v);
+		this.setFunction = setFunction;
 	}
 
 	baseGet(o) {
@@ -581,5 +521,3 @@ export class DatabaseFieldBoolean extends DatabaseField {
 		o[this.name] = !!val;
 	}
 }
-
-DatabaseField.prototype._setOrReturnKey = setOrReturnKey;

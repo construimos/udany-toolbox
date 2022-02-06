@@ -18,12 +18,12 @@ export function dbBacktick(val) {
 const _e = dbBacktick;
 
 declare type ModelId = Number|String|(Number|String)[];
-declare type ModelFilters = DatabaseQueryComponent[] | DatabaseQueryConditionOptions[];
+export declare type ModelFilters = (DatabaseQueryComponent | DatabaseQueryConditionOptions)[];
 
 function getWhere(filters: ModelFilters): DatabaseQueryClause {
 	filters = filters.map(f => (f instanceof DatabaseQueryComponent) ? f : new DatabaseQueryCondition(f));
 
-	return new DatabaseQueryClause(filters, 'AND');
+	return new DatabaseQueryClause(filters as DatabaseQueryComponent[], 'AND');
 }
 
 export interface DatabaseModelOptions<T extends Entity> {
@@ -67,7 +67,10 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 	 * Saves the model object to the database, either inserting or updating a row.
 	 * In case the model has no id, the generated id on insertion will be set on the model object
 	 */
-	async save(obj: T, allowedFields = [], insert = false) {
+	async save(obj: T, {
+		allowedFields = [],
+		insert = false
+	}: { allowedFields?: string[], insert?: boolean	} = {}) {
 		const pks = this.primaryKeys();
 		const exists = pks.reduce((v, pk) => v && obj[pk.name], true);
 
@@ -115,7 +118,7 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 		filters?: ModelFilters,
 		order?: string,
 		fieldNames?: string[]
-	} = {}): Promise<T[] | RowDataPacket[]> {
+	} = {}): Promise<T[]> {
 		if (!filters.length) {
 			filters.push(new DatabaseQueryCondition({
 				values: 1,
@@ -132,7 +135,7 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 
 		let [rows] = await this.db.connection.query(query, params);
 
-		return this.entity ? (rows as RowDataPacket[]).map(row => new this.entity().$fill(row)) : rows as RowDataPacket[];
+		return (rows as RowDataPacket[]).map(row => new this.entity().$fill(row));
 	}
 
 	async selectFirst({
@@ -217,22 +220,15 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 		return !!data.affectedRows;
 	}
 
-
-	// QUERIES
-	/**
-	 * Returns the select query with the given params
-	 *
-	 * @param {DatabaseQueryComponent} where
-	 * @param {String[]} fieldNames
-	 * @param {String} order
-	 *
-	 * @returns {string}
-	 */
 	getSelectQuery({
 		where = null,
 		fieldNames = [],
 		order = ''
-	}) {
+	}: {
+		where?: DatabaseQueryComponent,
+		fieldNames?: string[],
+		order?: string
+	}) : string {
 		const fields = this.fields.filter(f => !fieldNames.length || fieldNames.indexOf(f.name) >= 0);
 
 		const columns = fields.map(f => _e(f.name));
@@ -254,12 +250,7 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 		return `SELECT ${columns.join(', ')} FROM ${_e(this.table)} WHERE ${where.getClause()} ${order}`;
 	}
 
-	/**
-	 *
-	 * @param {Object} data
-	 * @return {string}
-	 */
-	getInsertQuery(data) {
+	getInsertQuery(data: Record<any,any>): string {
 		const pks = this.primaryKeys();
 
 		// Clone data so as not to taint the original object
@@ -285,26 +276,21 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 		let query = `INSERT INTO ${_e(this.table)} (${keys.join(', ')}) VALUES (${values.join(', ')})`;
 
 		if (this.updateOnDuplicate) {
-			let sets = [];
+			let updates = [];
 
 			for (let key in data) {
 				if (data.hasOwnProperty(key)) {
-					sets.push(`${_e(key)} = :${key}`);
+					updates.push(`${_e(key)} = :${key}`);
 				}
 			}
 
-			query += `\n  ON DUPLICATE KEY UPDATE  ${sets.join(', ')}`;
+			query += `\n  ON DUPLICATE KEY UPDATE  ${updates.join(', ')}`;
 		}
 
 		return query;
 	}
 
-	/**
-	 *
-	 * @param {Object} data
-	 * @return {string}
-	 */
-	getUpdateQuery(data) {
+	getUpdateQuery(data: Record<any,any>): string {
 		const pks = this.primaryKeys();
 
 		// Clone data so as not to taint the original object
@@ -317,12 +303,12 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 			delete data[pk.name];
 		});
 
-		let sets = [];
+		let updates = [];
 		let where = [];
 
 		for (let key in data) {
 			if (data.hasOwnProperty(key)) {
-				sets.push(`${_e(key)} = :${key}`);
+				updates.push(`${_e(key)} = :${key}`);
 			}
 		}
 
@@ -332,14 +318,10 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 			}
 		}
 
-		return `UPDATE ${_e(this.table)} SET ${sets.join(', ')} WHERE ${where.join(' AND ')}`;
+		return `UPDATE ${_e(this.table)} SET ${updates.join(', ')} WHERE ${where.join(' AND ')}`;
 	}
 
-	/**
-	 * @param {DatabaseQueryClause} where
-	 * @return {string}
-	 */
-	getDeleteQuery(where) {
+	getDeleteQuery(where: DatabaseQueryClause): string {
 		if (!where) {
 			throw 'Good luck erasing the db on thine own, but not on my watch!';
 		}
@@ -347,11 +329,7 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 		return `DELETE FROM ${_e(this.table)} WHERE ${where.getClause()}`;
 	}
 
-	/**
-	 *
-	 * @return {string}
-	 */
-	getCreateStatement() {
+	getCreateStatement(): string {
 		let lines = [];
 
 		for (let field of this.fields) {
@@ -368,7 +346,7 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 
 		lines.push(`    PRIMARY KEY (${primaryKeys.join(', ')})`);
 
-		return `CREATE TABLE ${_e(this.table)} (\n${lines.join(',\n')}\n) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;`;
+		return `CREATE TABLE ${_e(this.table)} (\n${lines.join(',\n')}\n) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8mb4_0900_ai_ci;`;
 	}
 
 	primaryKeys(): DatabaseField[] {
@@ -377,12 +355,8 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 
 	/**
 	 * Compares two model objects by their primary keys
-	 *
-	 * @param {T} obj1
-	 * @param {T} obj2
-	 * @return {boolean}
 	 */
-	compareByPK(obj1, obj2) {
+	compareByPK(obj1: T, obj2: T): boolean {
 		const pks = this.primaryKeys();
 
 		for (let pk of pks) {
@@ -395,12 +369,10 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 	}
 
 	/**
-	 * @param {T} obj
-	 * @param {DatabaseRelationship[]} relationships
-	 * @return {Promise<void>}
+	 * Retrieves relational data
 	 */
-	async selectRelationships(obj, relationships = null) {
-		if (!relationships) relationships = this.relationships.filter(r => r.autoload());
+	async selectRelationships(obj: T, relationships: DatabaseRelationship[] = null): Promise<void> {
+		if (!relationships) relationships = this.relationships.filter(r => r.autoload);
 
 		for (const relationship of relationships) {
 			await relationship.select(obj);
@@ -408,12 +380,10 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 	}
 
 	/**
-	 * @param {T} obj
-	 * @param {DatabaseRelationship[]} relationships
-	 * @return {Promise<void>}
+	 * Saves relational data
 	 */
-	async saveRelationships(obj, relationships = null) {
-		if (!relationships) relationships = this.relationships.filter(r => !r.readonly());
+	async saveRelationships(obj: T, relationships: DatabaseRelationship[] = null): Promise<void> {
+		if (!relationships) relationships = this.relationships.filter(r => !r.readOnly);
 
 		for (const relationship of relationships) {
 			await relationship.save(obj);

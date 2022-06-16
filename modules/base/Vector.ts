@@ -1,4 +1,4 @@
-import { Entity } from '../Entity';
+import { Entity } from './Entity';
 
 declare type Coordinates = [number, number, number?];
 declare type VectorData = {x: number, y: number, z?: number};

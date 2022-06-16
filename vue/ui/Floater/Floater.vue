@@ -12,7 +12,7 @@
 
 <script lang="ts">
 	import { defineComponent } from 'vue';
-	import Vector from '../../../classes/entities/Vector';
+	import { Vector } from '../../../modules/base';
 
 	export default defineComponent({
 		name: 'Floater',

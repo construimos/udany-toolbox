@@ -1,6 +1,6 @@
-import { Entity } from '../classes/Entity';
+import { Entity } from '../base';
 import { Database } from './Database';
-import { Constructor } from '../interfaces';
+import { Constructor } from '../../interfaces';
 import { DatabaseRelationship } from './DatabaseRelationship';
 
 import {
@@ -26,14 +26,115 @@ function getWhere(filters: ModelFilters): DatabaseQueryClause {
 	return new DatabaseQueryClause(filters as DatabaseQueryComponent[], 'AND');
 }
 
+export interface DatabaseFieldOptions {
+	name: string;
+	column?: string;
+	type: string;
+	length: number;
+	unsigned?: boolean;
+	nullable?: boolean;
+	defaultValue?: any;
+	autoIncrement?: boolean;
+	primaryKey?: boolean;
+	unique?: boolean;
+
+	getFunction?: Function;
+	setFunction?: Function;
+}
+
+export class DatabaseField implements DatabaseFieldOptions {
+	name: string;
+	column?: string;
+	type: string;
+	length: number;
+	unsigned: boolean;
+	nullable: boolean;
+	defaultValue: any;
+	autoIncrement: boolean;
+	primaryKey: boolean;
+	unique: boolean;
+
+	getFunction: Function;
+	setFunction: Function;
+
+	constructor({
+		name,
+		type,
+		length,
+		unsigned = false,
+		nullable = false,
+		defaultValue = null,
+		autoIncrement = false,
+		primaryKey = false,
+		unique = false,
+		column = null,
+		getFunction = null,
+		setFunction = null,
+	}: DatabaseFieldOptions) {
+		this.name = name;
+		this.type = type;
+		this.length = length;
+		this.unsigned = unsigned;
+		this.nullable = nullable;
+		this.defaultValue = defaultValue;
+		this.autoIncrement = autoIncrement;
+		this.primaryKey = primaryKey;
+		this.unique = unique;
+		this.column = column ? column : name;
+
+		/** @type {Function} */
+		this.getFunction = getFunction;
+		/** @type {Function} */
+		this.setFunction = setFunction;
+	}
+
+	baseGet(o) {
+		return o[this.name];
+	}
+
+	baseSet(o, val) {
+		o[this.name] = val;
+	}
+
+	get(o) {
+		return this.getFunction ? this.getFunction(o) : this.baseGet(o);
+	}
+
+	set(o, val) {
+		return this.setFunction ? this.setFunction(o, val) : this.baseSet(o, val);
+	}
+
+	getTypeString() {
+		return this.type + (this.length ? `(${this.length})` : '') + (this.unsigned ? ' unsigned' : '')
+	}
+
+	getDefaultValue() {
+		if (typeof this.defaultValue === 'string') {
+			return `"${this.defaultValue}"`;
+		} else {
+			return this.defaultValue;
+		}
+	}
+}
+
+export class DatabaseFieldBoolean extends DatabaseField {
+	baseGet(o) {
+		return o[this.name] ? 1 : 0;
+	}
+
+	baseSet(o, val) {
+		o[this.name] = !!val;
+	}
+}
+
 export interface DatabaseModelOptions<T extends Entity> {
 	db: Database;
 	table: string;
 	entity: Constructor<T>;
 	fields: DatabaseField[];
-	relationships: DatabaseRelationship[];
-	insertWithId: boolean;
-	updateOnDuplicate: boolean;
+	relationships?: DatabaseRelationship<T, Entity>[];
+	insertWithId?: boolean;
+	updateOnDuplicate?: boolean;
 }
 
 export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> {
@@ -41,7 +142,7 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 	table: string;
 	entity: Constructor<T>;
 	fields: DatabaseField[];
-	relationships: DatabaseRelationship[];
+	relationships: DatabaseRelationship<T, Entity>[];
 	insertWithId: boolean;
 	updateOnDuplicate: boolean;
 
@@ -371,7 +472,7 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 	/**
 	 * Retrieves relational data
 	 */
-	async selectRelationships(obj: T, relationships: DatabaseRelationship[] = null): Promise<void> {
+	async selectRelationships(obj: T, relationships: DatabaseRelationship<T, Entity>[] = null): Promise<void> {
 		if (!relationships) relationships = this.relationships.filter(r => r.autoload);
 
 		for (const relationship of relationships) {
@@ -382,112 +483,18 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 	/**
 	 * Saves relational data
 	 */
-	async saveRelationships(obj: T, relationships: DatabaseRelationship[] = null): Promise<void> {
+	async saveRelationships(obj: T, relationships: DatabaseRelationship<T, Entity>[] = null): Promise<void> {
 		if (!relationships) relationships = this.relationships.filter(r => !r.readOnly);
 
 		for (const relationship of relationships) {
 			await relationship.save(obj);
 		}
 	}
+
+	static Field = {
+		Any: DatabaseField,
+		Boolean: DatabaseFieldBoolean
+	};
 }
 
-export interface DatabaseFieldOptions {
-	name: string;
-	column?: string;
-	type: string;
-	length: number;
-	unsigned: boolean;
-	nullable: boolean;
-	defaultValue: any;
-	autoIncrement: boolean;
-	primaryKey: boolean;
-	unique: boolean;
-
-	getFunction?: Function;
-	setFunction?: Function;
-}
-
-export class DatabaseField implements DatabaseFieldOptions {
-	name: string;
-	column?: string;
-	type: string;
-	length: number;
-	unsigned: boolean;
-	nullable: boolean;
-	defaultValue: any;
-	autoIncrement: boolean;
-	primaryKey: boolean;
-	unique: boolean;
-
-	getFunction: Function;
-	setFunction: Function;
-
-	constructor({
-		name,
-		type,
-		length,
-		unsigned = false,
-		nullable = false,
-		defaultValue = null,
-		autoIncrement = false,
-		primaryKey = false,
-		unique = false,
-		column = null,
-		getFunction = null,
-		setFunction = null,
-	}: DatabaseFieldOptions) {
-		this.name = name;
-		this.type = type;
-		this.length = length;
-		this.unsigned = unsigned;
-		this.nullable = nullable;
-		this.defaultValue = defaultValue;
-		this.autoIncrement = autoIncrement;
-		this.primaryKey = primaryKey;
-		this.unique = unique;
-		this.column = column ? column : name;
-
-		/** @type {Function} */
-		this.getFunction = getFunction;
-		/** @type {Function} */
-		this.setFunction = setFunction;
-	}
-
-	baseGet(o) {
-		return o[this.name];
-	}
-
-	baseSet(o, val) {
-		o[this.name] = val;
-	}
-
-	get(o) {
-		return this.getFunction ? this.getFunction(o) : this.baseGet(o);
-	}
-
-	set(o, val) {
-		return this.setFunction ? this.setFunction(o, val) : this.baseSet(o, val);
-	}
-
-	getTypeString() {
-		return this.type + (this.length ? `(${this.length})` : '') + (this.unsigned ? ' unsigned' : '')
-	}
-
-	getDefaultValue() {
-		if (typeof this.defaultValue === 'string') {
-			return `"${this.defaultValue}"`;
-		} else {
-			return this.defaultValue;
-		}
-	}
-}
-
-export class DatabaseFieldBoolean extends DatabaseField {
-	baseGet(o) {
-		return o[this.name] ? 1 : 0;
-	}
-
-	baseSet(o, val) {
-		o[this.name] = !!val;
-	}
-}
+export default DatabaseModel

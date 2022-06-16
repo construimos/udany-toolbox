@@ -1,5 +1,5 @@
 import { Dictionary } from '../interfaces';
-import { Emitter } from '../classes/Emitter'
+import { Base } from '../modules'
 
 declare global {
 	interface Math {
@@ -28,7 +28,7 @@ declare global {
 		escape(text: string):string;
 	}
 
-	interface Array<T> extends Emitter {
+	interface Array<T> extends Base.Emitter {
 
 	}
 }

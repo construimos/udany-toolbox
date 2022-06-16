@@ -1,6 +1,6 @@
-import '../extend/Date';
+import '../../extend/Date';
 import HasUniqueId from './HasUniqueId';
-import { Dictionary } from '../interfaces';
+import { Dictionary } from '../../interfaces';
 
 interface EventHandler {
 	callback: HandlerFunction;

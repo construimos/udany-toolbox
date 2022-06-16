@@ -1,5 +1,5 @@
 import { DatabaseQueryCondition } from './DatabaseQueryComponent';
-import { Entity } from '../classes/Entity';
+import { Entity } from '../base';
 import { DatabaseModel, ModelFilters } from './DatabaseModel';
 
 interface DatabaseRelationshipOptions<T extends Entity, E extends Entity> {
@@ -25,6 +25,7 @@ export abstract class DatabaseRelationship<T extends Entity, E extends Entity> i
 	model: DatabaseModel<T>;
 	// The external model
 	externalModel: DatabaseModel<E>;
+
 	// The property on the main model the relationship will be stored within
 	property: string;
 
@@ -302,3 +303,10 @@ export class DatabaseRelationshipManyToMany<T extends Entity, E extends Entity, 
 		}
 	}
 }
+
+const Relationship = {
+	OneToMany: DatabaseRelationshipOneToMany,
+	ManyToMany: DatabaseRelationshipManyToMany
+}
+
+export default Relationship;

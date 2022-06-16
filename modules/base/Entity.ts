@@ -1,5 +1,5 @@
 import Emitter from './Emitter';
-import { Constructor } from '../interfaces';
+import { Constructor } from '../../interfaces';
 
 type Serialize<I, O> = (x: O, safeOnly?: boolean) => I;
 type Deserialize<I, O> = (x: I) => O | null;

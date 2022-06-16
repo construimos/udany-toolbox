@@ -1,6 +1,6 @@
 import { ConnectionOptions, Connection } from 'mysql2/promise';
 import * as mysql from 'mysql2/promise';
-import Emitter from '../classes/Emitter';
+import { Emitter } from '../base';
 import { queryFormat } from './queryFormat';
 
 export class Database extends Emitter {
@@ -22,3 +22,5 @@ export class Database extends Emitter {
 		this.emit('connected');
 	}
 }
+
+export default Database;

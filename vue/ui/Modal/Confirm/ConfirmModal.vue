@@ -3,7 +3,7 @@
 		icon="question"
 		:title="title"
 
-		:size="modalSizes.small"
+		:size="ModalSize.small"
 
 		:show-close="false"
 	>
@@ -26,7 +26,7 @@
 
 	import ModalFrame from '../ModalFrame.vue';
 	import BaseButton from '../../Button/BaseButton.vue';
-	import { modalSizes } from '../modalService.js';
+	import { ModalSize } from '../modalService';
 	import { onBeforeUnmount, onMounted, ref } from 'vue';
 	import { useHtmlElement } from '../../../util/useHtmlElement.js';
 	import FaIcon from '../../FontAwesome/FaIcon.vue';
@@ -35,7 +35,7 @@
 		name: 'ConfirmModal',
 		components: { FaIcon, BaseButton, ModalFrame },
 		data: () => ({
-			modalSizes
+			ModalSize
 		}),
 		props: {
 			message: {

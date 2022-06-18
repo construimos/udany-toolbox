@@ -29,6 +29,8 @@ declare global {
 	}
 
 	interface Array<T> extends Base.Emitter {
-
+		last(): T;
+		move(from: Number, to: Number): void;
+		remove(...elements: T[]): Array<T>;
 	}
 }

@@ -33,7 +33,7 @@
 
 <script>
 	import FaIcon from '../FontAwesome/FaIcon.vue';
-	import { modalSizes } from './modalService.js';
+	import { ModalSize } from './modalService';
 
 	export default {
 		name: 'ModalFrame',
@@ -44,8 +44,8 @@
 		props: {
 			size: {
 				type: String,
-				validator: (v) => Object.values(modalSizes).includes(v),
-				default: () => modalSizes.small
+				validator: (v) => Object.values(ModalSize).includes(v),
+				default: () => ModalSize.small
 			},
 			icon: {
 				type: String,
@@ -70,7 +70,6 @@
 <style lang="scss" scoped>
 	.modal-frame {
 		--modal-margin: var(--spacer-5);
-
 
 		--default-shadow: 0 0 10px rgba(#100f17, .5);
 

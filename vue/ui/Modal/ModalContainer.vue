@@ -27,13 +27,14 @@
 
 <script>
 	import Dimmer from '../Dimmer/Dimmer.vue';
+	import { ModalService } from './modalService';
 
 	export default {
 		name: 'ModalContainer',
 		components: { Dimmer },
 		props: {
 			service: {
-				type: Object,
+				type: ModalService,
 				required: true
 			}
 		},

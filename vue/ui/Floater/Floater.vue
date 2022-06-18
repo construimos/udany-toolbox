@@ -19,7 +19,7 @@
 		props: {
 			position: {
 				type: [Array, Vector, Object],
-				required: true
+				default: () => [0, 0]
 			}
 		},
 		computed: {

@@ -8,7 +8,7 @@
 
 		<slot/>
 
-		<InlineTooltip top v-if="tooltip" :timeout="500">
+		<InlineTooltip top v-if="tooltip" :timeout="tooltipTimeout">
 			<slot name="tooltip">{{tooltip}}</slot>
 		</InlineTooltip>
 
@@ -36,6 +36,10 @@
 			tooltip: {
 				type: String,
 				default: ''
+			},
+			tooltipTimeout: {
+				type: Number,
+				default: 500
 			},
 			icon: {
 				type: String,

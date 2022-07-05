@@ -2,7 +2,8 @@
 	"compilerOptions": {
 		"module": "CommonJS",
 		"target": "ES2018",
-		"experimentalDecorators": true
+		"experimentalDecorators": true,
+		"allowSyntheticDefaultImports": true
 	},
 	"include": ["**/*.ts"],
 	"exclude": []

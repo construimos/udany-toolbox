@@ -3,7 +3,9 @@ import * as mysql from 'mysql2/promise';
 import { Emitter } from '../base';
 import { queryFormat } from './queryFormat';
 
-export class Database extends Emitter {
+export class Database extends Emitter<{
+	connected
+}> {
 	options: ConnectionOptions;
 	connection: Connection;
 

@@ -2,31 +2,38 @@ import '../../extend/Date';
 import HasUniqueId from './HasUniqueId';
 import { Dictionary } from '../../interfaces';
 
-interface EventHandler {
-	callback: HandlerFunction;
+interface EventHandler<T extends any[]> {
+	callback: HandlerFunction<T>;
 	key?: string;
 	once: boolean
 }
 
-declare type HandlerFunction = ((...args: any[] | undefined) => void);
+declare type HandlerFunction<T extends any[]> = ((...args: T | undefined) => void);
+declare type HandlerIdentifier<T extends any[]> = HandlerFunction<T> | EventHandler<T> | string;
 
-declare type HandlerIdentifier = HandlerFunction | EventHandler | string;
-
-function isEventHandler(data: HandlerIdentifier): data is EventHandler {
+function isEventHandler(data: HandlerIdentifier<any[]>): data is EventHandler<any[]> {
 	return typeof data === 'object' ? 'callback' in data : false;
 }
 
-/**
- * Emitter class
- * @name Emitter
- * @property {Function} __autoEvents
- * @extends HasUniqueId
- */
-export class Emitter extends HasUniqueId {
+type EventMap = Record<string, any[]>;
+type EventKey<T extends EventMap> = string & keyof T;
+type EventReceiver<T> = (params: T) => void;
+
+interface Emitter6<T extends EventMap> {
+	on<K extends EventKey<T>>
+	(eventName: K, fn: EventReceiver<T[K]>): void;
+	off<K extends EventKey<T>>
+	(eventName: K, fn: EventReceiver<T[K]>): void;
+	emit<K extends EventKey<T>>
+	(eventName: K, params: T[K]): void;
+}
+
+
+export class Emitter<T extends EventMap> extends HasUniqueId {
 	static AnyEvent = '*';
 
 	protected autoEvents?: () => void;
-	declare protected boundEvents: Dictionary<EventHandler[]>;
+	declare protected boundEvents: Dictionary<EventHandler<any[]>[]>;
 
 	constructor() {
 		super();
@@ -42,7 +49,7 @@ export class Emitter extends HasUniqueId {
 		}
 	}
 
-	on(event: string, callback: HandlerFunction, key?: string, once: boolean = false): this {
+	on<K extends EventKey<T>>(event: K, callback: HandlerFunction<T[K]>, key?: string, once: boolean = false): this {
 		this.ensureBoundEventsExists();
 		if (!this.boundEvents[event]) this.boundEvents[event] = [];
 
@@ -51,11 +58,11 @@ export class Emitter extends HasUniqueId {
 		return this;
 	}
 
-	onAny(callback: HandlerFunction, key?: string, once: boolean = false) {
+	onAny(callback: HandlerFunction<any[]>, key?: string, once: boolean = false) {
 		return this.on(Emitter.AnyEvent, callback, key, once);
 	}
 
-	off(event: string, data: HandlerIdentifier | HandlerIdentifier[]) {
+	off<K extends EventKey<T>>(event: K, data: HandlerIdentifier<T[K]> | HandlerIdentifier<T[K]>[]) {
 		this.ensureBoundEventsExists();
 		if (!this.boundEvents[event]) return this;
 
@@ -84,18 +91,15 @@ export class Emitter extends HasUniqueId {
 		return this;
 	}
 
-	offAny(data: HandlerIdentifier) {
+	offAny(data: HandlerIdentifier<any[]>) {
 		return this.off(Emitter.AnyEvent, data);
 	}
 
-	emit(event, args?: any[]) {
+	emit<K extends EventKey<T>>(event: K, args?: T[K]) {
 		this.ensureBoundEventsExists();
 
-		if (!(args instanceof Array)) args = [args];
-
 		if (this.boundEvents[event]) {
-			let handlersToRemove: EventHandler[] = [];
-
+			let handlersToRemove: EventHandler<T[K]>[] = [];
 			let handlers = this.boundEvents[event].concat([]);
 
 			for (let handler of handlers) {
@@ -108,13 +112,13 @@ export class Emitter extends HasUniqueId {
 		}
 
 		if (event !== Emitter.AnyEvent && this.boundEvents[Emitter.AnyEvent]) {
-			this.emit(Emitter.AnyEvent, ([event]).concat(args));
+			//this.emit(Emitter.AnyEvent, ([event]).concat(args));
 		}
 
 		return this;
 	}
 
-	once(event: string, callback: HandlerFunction, key?: string) {
+	once<K extends EventKey<T>>(event: K, callback: HandlerFunction<T[K]>, key?: string) {
 		this.on(event, callback, key, true);
 
 		return this;

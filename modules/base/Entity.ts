@@ -379,7 +379,13 @@ const getFieldDecorator = (field: BaseField<any, any>) => (target: Entity, prope
 };
 
 
-export class Entity extends Emitter {
+export class Entity
+	extends	Emitter<{
+		fill,
+		get: [BaseField<any, any>],
+		set: [BaseField<any, any>, any, any]
+	}>
+{
 	static __class: string = '';
 	declare _fields: BaseField<any, any>[];
 	declare static _fieldCache: BaseField<any, any>[];

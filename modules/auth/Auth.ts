@@ -11,6 +11,7 @@ interface RoutingOptions {
 	routerPrefix: string,
 	login?: string,
 	logout?: string,
+	session?: string,
 	home?: string,
 
 	postLogin?: RequestHandler
@@ -63,6 +64,7 @@ export class Auth<M extends AuthUser>
 		this.routing = {
 			login: 'login',
 			logout: 'logout',
+			session: 'session',
 			home: '',
 			postLogin: function (req, res) {
 				res.redirect('/');
@@ -100,6 +102,9 @@ export class Auth<M extends AuthUser>
 			strategy.on('afterSave', (user, profile) => {
 				this.emit('afterSave', [user, profile]);
 			});
+
+			if (!strategy.callbackURL) strategy.callbackURL = this.getCallbackUrl(strategy);
+			passport.use(strategy.getStrategy());
 		}
 
 		passport.serializeUser((user, done) => this.serializeUser(user, done));
@@ -126,8 +131,24 @@ export class Auth<M extends AuthUser>
 
 			router.get(
 				`/${strategy.key}/callback`,
-				passport.authenticate(strategy.key, { failureRedirect: `/${this.routing.login}`, ...strategy.callbackOptions })
+				passport.authenticate(strategy.key, { failureRedirect: `/${this.routing.login}`, ...strategy.callbackOptions }),
+				this.routing.postLogin
 			);
+		}
+
+		if (this.routing.logout) {
+			router.get(`/${this.routing.logout}`, (req, res, next) => {
+				req.logout((err) => {
+					if (err) { return next(err); }
+					res.redirect(`/${this.routing.home}`);
+				});
+			});
+		}
+
+		if (this.routing.session) {
+			router.get(`/${this.routing.session}`, (req, res) => {
+				res.send(req.user);
+			});
 		}
 	}
 }

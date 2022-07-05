@@ -8,26 +8,15 @@ interface EventHandler<T extends any[]> {
 	once: boolean
 }
 
+type EventMap = Record<string, any[]>;
+type EventKey<T extends EventMap> = string & keyof T;
+
 declare type HandlerFunction<T extends any[]> = ((...args: T | undefined) => void);
 declare type HandlerIdentifier<T extends any[]> = HandlerFunction<T> | EventHandler<T> | string;
 
 function isEventHandler(data: HandlerIdentifier<any[]>): data is EventHandler<any[]> {
 	return typeof data === 'object' ? 'callback' in data : false;
 }
-
-type EventMap = Record<string, any[]>;
-type EventKey<T extends EventMap> = string & keyof T;
-type EventReceiver<T> = (params: T) => void;
-
-interface Emitter6<T extends EventMap> {
-	on<K extends EventKey<T>>
-	(eventName: K, fn: EventReceiver<T[K]>): void;
-	off<K extends EventKey<T>>
-	(eventName: K, fn: EventReceiver<T[K]>): void;
-	emit<K extends EventKey<T>>
-	(eventName: K, params: T[K]): void;
-}
-
 
 export class Emitter<T extends EventMap> extends HasUniqueId {
 	static AnyEvent = '*';

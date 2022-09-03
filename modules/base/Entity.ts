@@ -399,10 +399,6 @@ export class Entity
 		return Entity.GetFields(this);
 	}
 
-	get $keys(): BaseField<any, any>[] {
-		return this.$fields.filter(f => f.key);
-	}
-
 	$field(name: string): BaseField<any, any> {
 		return this.$fields.find(f => f.name === name);
 	}
@@ -526,7 +522,7 @@ export class Entity
 	}
 
 	$equals(obj: this): boolean {
-		let keys = this.$keys.map(k => k.name);
+		let keys = this.$fields.map(k => k.name);
 
 		return obj.$serialize(false, keys) === this.$serialize(false, keys);
 	}

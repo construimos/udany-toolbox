@@ -1,5 +1,4 @@
 import { Dictionary } from '../interfaces';
-import { Base } from '../modules'
 
 declare global {
 	interface Math {
@@ -28,9 +27,14 @@ declare global {
 		escape(text: string):string;
 	}
 
-	interface Array<T> extends Base.Emitter {
-		last(): T;
+	interface Array<T> {
+		selfConcat(...elements: T[][]): this;
+		last(): T | undefined;
 		move(from: Number, to: Number): void;
-		remove(...elements: T[]): Array<T>;
+		remove(...elements: T[]): this;
+		unique(value?: boolean): boolean;
+		insertAt(index: number, value: T): this;
+		shuffle(): this;
+		randomElement(): T;
 	}
 }

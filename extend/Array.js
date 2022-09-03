@@ -7,6 +7,8 @@ if (Object.getOwnPropertyDescriptor(Array.prototype, 'push').writable) {
 				this.push.apply(this, a);
 			}
 		}
+
+		return this;
 	};
 
 	Array.prototype.last = function () {
@@ -38,7 +40,7 @@ if (Object.getOwnPropertyDescriptor(Array.prototype, 'push').writable) {
 		if (arguments.length === 0) {
 			return !!this._unique;
 		} else {
-			this._unique = arguments[0];
+			this._unique = !!arguments[0];
 			return this;
 		}
 	};

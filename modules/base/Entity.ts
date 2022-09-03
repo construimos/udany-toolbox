@@ -256,7 +256,7 @@ class BaseEntityField<E extends Entity, I, O> extends BaseField<I, O> {
 			obj = null;
 		}
 
-		return obj;
+		return obj? obj.$fill(plain) : null;
 	}
 }
 

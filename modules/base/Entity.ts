@@ -615,6 +615,31 @@ export class Entity
 	}
 }
 
+export class PolymorphicEntity extends Entity {
+	static typeKey: string = 'type';
+	static classMap: Record<string, Constructor<Entity>>;
+
+	$fill<E extends this>(a: any): E {
+		const $class = <typeof PolymorphicEntity>this.constructor;
+
+		if (!$class.classMap) {
+			throw `Failed to construct Polymorphic Class ${ this.constructor.name } because no class map was defined`;
+		}
+
+		if (!a[$class.typeKey]) {
+			throw `Failed to construct Polymorphic Class ${ this.constructor.name } because of missing key "${ $class.typeKey }"`;
+		}
+
+		const $finalClass = <Constructor<E>> $class.classMap[a[$class.typeKey]];
+
+		if (!$finalClass) {
+			throw `Failed to construct Polymorphic Class ${this.constructor.name} because none was found with key "${a[$class.typeKey]}"`;
+		}
+
+		return new $finalClass().$fill(a);
+	}
+}
+
 /// Attributes
 
 // /// == EntityMap

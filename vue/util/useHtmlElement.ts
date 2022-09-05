@@ -1,6 +1,9 @@
 import { computed } from 'vue';
+import type { Ref } from 'vue';
 
-export function getHtmlElementFromRef(elementRef) {
+declare type HtmlRefOrElement = HTMLElement | Ref<HTMLElement>
+
+export function getHtmlElementFromRef(elementRef: HtmlRefOrElement): HTMLElement {
 	if (!elementRef) return null;
 	if (elementRef instanceof HTMLElement) return elementRef;
 
@@ -12,11 +15,11 @@ export function getHtmlElementFromRef(elementRef) {
 	return el;
 }
 
-export function useHtmlElement(elementRef) {
-	return computed(() => getHtmlElementFromRef(elementRef));
+export function useHtmlElement(elementRef: HtmlRefOrElement):computed<HTMLElement> {
+	return computed<HTMLElement>(() => getHtmlElementFromRef(elementRef));
 }
 
-export function elementBelongsTo(element, parent) {
+export function elementBelongsTo(element: HtmlRefOrElement, parent: HtmlRefOrElement) {
 	let el = getHtmlElementFromRef(element);
 	parent = getHtmlElementFromRef(parent);
 

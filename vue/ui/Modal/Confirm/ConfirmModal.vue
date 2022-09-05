@@ -28,7 +28,7 @@
 	import BaseButton from '../../Button/BaseButton.vue';
 	import { ModalSize } from '../modalService';
 	import { onBeforeUnmount, onMounted, ref } from 'vue';
-	import { useHtmlElement } from '../../../util/useHtmlElement.js';
+	import { useHtmlElement } from '../../../util/useHtmlElement';
 	import FaIcon from '../../FontAwesome/FaIcon.vue';
 
 	export default {

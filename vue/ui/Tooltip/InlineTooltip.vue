@@ -81,6 +81,10 @@
 					let tooltipRect = this.$el.getBoundingClientRect();
 				})
 			}
+
+			if (this.forceShow && this.constrain) {
+				this.show();
+			}
 		},
 		beforeUnmount() {
 			let parent = this.$el.parentElement;

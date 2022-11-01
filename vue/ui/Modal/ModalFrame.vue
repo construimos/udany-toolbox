@@ -92,7 +92,7 @@
 
 			.title {
 				.fa-icon {
-					margin-right: var(--spacer-3);
+					margin-right: var(--spacer-2);
 				}
 			}
 

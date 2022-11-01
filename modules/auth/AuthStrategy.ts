@@ -1,5 +1,6 @@
 import { DatabaseModel } from '../orm';
 import { Emitter, Entity } from '../base';
+import type { Strategy } from 'passport';
 
 export interface StrategyProfile {
 	id: string | number;
@@ -36,7 +37,7 @@ export abstract class AuthStrategy<U extends Entity, P extends StrategyProfile>
 	userModel: DatabaseModel<U>;
 	userFactory: (profile: GenericProfile) => U;
 
-	protected strategy: Object;
+	protected strategy: Strategy;
 
 	constructor({
 		idField,
@@ -97,7 +98,7 @@ export abstract class AuthStrategy<U extends Entity, P extends StrategyProfile>
 		done(null, user);
 	}
 
-	abstract getStrategy(): Object
+	abstract getStrategy(): Strategy
 
 	getProfileId(profile: P): string {
 		return profile.id.toString();

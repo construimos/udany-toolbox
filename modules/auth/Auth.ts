@@ -107,12 +107,12 @@ export class Auth<M extends AuthUser>
 			passport.use(strategy.getStrategy());
 		}
 
-		passport.serializeUser((user, done) => this.serializeUser(user, done));
-		passport.deserializeUser((user, done) => this.deserializeUser(user, done));
+		passport.serializeUser((user: M, done) => this.serializeUser(user, done));
+		passport.deserializeUser((user: M, done) => this.deserializeUser(user, done));
 
 		app.use(session(this.sessionOptions));
-		app.use(passport.initialize({}));
-		app.use(passport.session({}));
+		app.use(passport.initialize({ userProperty: null }));
+		app.use(passport.session({ pauseStream: false }));
 	}
 
 	getAuthUrl(strategy: AuthStrategy<M, any>) {

@@ -1,4 +1,4 @@
-import { reactive, markRaw } from 'vue';
+import { reactive, markRaw, defineAsyncComponent } from 'vue';
 
 export enum ModalSize {
 	tiny = 'tiny',
@@ -14,7 +14,7 @@ class ModalData {
 	attributes: Object;
 	listeners: Object;
 
-	shouldHideOnClose: Boolean;
+	shouldHideOnClose?: Boolean;
 	closeOnClickOutside: Boolean;
 }
 
@@ -37,6 +37,9 @@ class ModalInstance extends ModalData {
 	}
 }
 
+const ConfirmModal = defineAsyncComponent(() => import('./Confirm/ConfirmModal.vue'));
+const AlertModal = defineAsyncComponent(() => import('./Confirm/AlertModal.vue'));
+
 export class ModalService {
 	modals: ModalInstance[] = [];
 	stack: { modal: ModalInstance, scroll: number }[] = [];
@@ -49,7 +52,7 @@ export class ModalService {
 		listeners = {},
 		shouldHideOnClose = false,
 		closeOnClickOutside = true
-	}: ModalData): ModalInstance {
+	}: Omit<ModalData, 'id'>): ModalInstance {
 		this.modals.push(new ModalInstance({
 			id: this.maxId++,
 			component: markRaw(component),
@@ -124,15 +127,14 @@ export class ModalService {
 		}
 	}
 
+
 	async confirm({
 		message = '',
 		title = 'Confirm',
 		confirmLabel = 'Ok',
 		cancelLabel = 'Cancel',
 	} = {}) {
-		return new Promise(async (accept) => {
-			let ConfirmModal = (await import('./Confirm/ConfirmModal.vue')).default;
-
+		return new Promise<boolean>(async (accept) => {
 			modalService.new({
 				component: ConfirmModal,
 				attributes: {
@@ -142,9 +144,28 @@ export class ModalService {
 					cancelLabel,
 				},
 				listeners: {
-					close: (response) => {
-						accept(!!response)
-					}
+					close: response => accept(!!response)
+				},
+				closeOnClickOutside: false,
+			}).open();
+		})
+	}
+
+	async alert({
+		message = '',
+		title = 'Alert',
+		confirmLabel = 'Ok'
+	} = {}) {
+		return new Promise<void>(async (accept) => {
+			modalService.new({
+				component: AlertModal,
+				attributes: {
+					message,
+					title,
+					confirmLabel,
+				},
+				listeners: {
+					close: () => accept()
 				},
 				closeOnClickOutside: false,
 			}).open();
@@ -152,4 +173,4 @@ export class ModalService {
 	}
 }
 
-export const modalService = reactive(new ModalService());
+export const modalService: ModalService = reactive(new ModalService());

@@ -1,6 +1,7 @@
 import PassportGoogleStrategy from 'passport-google-oauth20';
 import { AuthStrategy, StrategyOptions, StrategyProfile } from '../AuthStrategy';
 import { AuthUser } from '../AuthUser';
+import type { Strategy } from 'passport';
 
 interface GoogleProfile extends StrategyProfile {
 	displayName: string;
@@ -25,7 +26,7 @@ export class GoogleStrategy<M extends AuthUser> extends AuthStrategy<M, GooglePr
 		this.options = options;
 	}
 
-	getStrategy(): Object {
+	getStrategy(): Strategy {
 		if (!this.strategy) {
 			this.strategy = new PassportGoogleStrategy.Strategy(
 				{

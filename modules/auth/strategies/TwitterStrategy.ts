@@ -1,6 +1,7 @@
 import PassportTwitterStrategy from 'passport-twitter';
 import { AuthStrategy, StrategyOptions, StrategyProfile } from '../AuthStrategy';
 import { AuthUser } from '../AuthUser';
+import type { Strategy } from 'passport';
 
 interface TwitterProfile extends StrategyProfile {
 	displayName: string;
@@ -23,7 +24,7 @@ export class TwitterStrategy<M extends AuthUser> extends AuthStrategy<M, Twitter
 		this.options = options;
 	}
 
-	getStrategy(): Object {
+	getStrategy(): Strategy {
 		if (!this.strategy) {
 			this.strategy = new PassportTwitterStrategy.Strategy(
 				{

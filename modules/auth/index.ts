@@ -2,6 +2,7 @@ import { Auth } from './Auth';
 import { GoogleStrategy } from './strategies/GoogleStrategy';
 import { TwitterStrategy } from './strategies/TwitterStrategy';
 import { AuthUser } from './AuthUser';
+import { AuthStrategy } from './AuthStrategy';
 
 const strategies = {
 	GoogleStrategy,
@@ -11,5 +12,6 @@ const strategies = {
 export {
 	Auth,
 	AuthUser,
+	AuthStrategy,
 	strategies
 }

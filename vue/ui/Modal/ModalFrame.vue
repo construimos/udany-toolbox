@@ -1,34 +1,36 @@
 <template>
-	<div
-		class="modal-frame"
-		:class="[size]"
+	<Transition appear name="fade">
+		<div
+			class="modal-frame"
+			:class="[size]"
 
-		@mousedown.stop
-	>
-		<div class="header py-2 px-3">
-			<span class="title">
-				<fa-icon v-if="icon">{{icon}}</fa-icon>
+			@mousedown.stop
+		>
+			<div class="header py-2 px-3">
+				<span class="title">
+					<fa-icon v-if="icon">{{icon}}</fa-icon>
 
-				<slot name="title">
-					{{title}}
-				</slot>
-			</span>
+					<slot name="title">
+						{{title}}
+					</slot>
+				</span>
 
-			<fa-icon
-				v-if="showClose"
-				class="close-icon"
-				@click="$emit('close')"
-			>times</fa-icon>
+				<fa-icon
+					v-if="showClose"
+					class="close-icon"
+					@click="$emit('close')"
+				>times</fa-icon>
+			</div>
+
+			<div class="content py-2 px-3">
+				<slot></slot>
+			</div>
+
+			<div class="footer py-2 px-3" v-if="showFooter">
+				<slot name="footer"></slot>
+			</div>
 		</div>
-
-		<div class="content py-2 px-3">
-			<slot></slot>
-		</div>
-
-		<div class="footer py-2 px-3" v-if="showFooter">
-			<slot name="footer"></slot>
-		</div>
-	</div>
+	</Transition>
 </template>
 
 <script>
@@ -115,5 +117,15 @@
 		&.small { width: 380px; }
 		&.medium { width: 600px; }
 		&.large { width: 900px; }
+	}
+
+	.fade-enter-active,
+	.fade-leave-active {
+		transition: opacity 0.5s ease;
+	}
+
+	.fade-enter-from,
+	.fade-leave-to {
+		opacity: 0;
 	}
 </style>

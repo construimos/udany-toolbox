@@ -55,6 +55,10 @@
 		--button-background-focus-i: var(--button-background-focus, rgba(255, 255, 255, 0.08));
 		--button-background-hover-i: var(--button-background-hover, rgba(255, 255, 255, 0.12));
 
+		--button-icon-color-i: var(--button-icon-color, inherit);
+		--button-icon-color-focus-i: var(--button-icon-color-focus, var(--button-icon-color-i));
+		--button-icon-color-hover-i: var(--button-icon-color-hover, var(--button-icon-color-i));
+
 		border: none;
 		border-radius: 2px;
 
@@ -69,17 +73,6 @@
 
 		padding: var(--spacer-1) var(--spacer-2);
 
-		&:focus {
-			background-color: var(--button-background-focus-i);
-			box-shadow: 0 1px 9px rgba(6, 6, 17, 0.5);
-			outline: none;
-		}
-
-		&:hover {
-			background-color: var(--button-background-hover-i);
-			box-shadow: 0 1px 9px rgba(6, 6, 17, 0.5);
-		}
-
 		&.disabled {
 			color: var(--neutral-md);
 			pointer-events: none;
@@ -92,8 +85,28 @@
 		.button-icon {
 			margin-right: var(--spacer-2);
 			font-size: .9em;
+			color: var(--button-icon-color-i);
 
 			transition: transform .1s;
+		}
+
+		&:hover {
+			background-color: var(--button-background-hover-i);
+			box-shadow: 0 1px 9px rgba(6, 6, 17, 0.5);
+
+			.button-icon {
+				color: var(--button-icon-color-hover-i);
+			}
+		}
+
+		&:focus {
+			background-color: var(--button-background-focus-i);
+			box-shadow: 0 1px 9px rgba(6, 6, 17, 0.5);
+			outline: none;
+
+			.button-icon {
+				color: var(--button-icon-color-focus-i);
+			}
 		}
 
 		&:hover, &:focus {

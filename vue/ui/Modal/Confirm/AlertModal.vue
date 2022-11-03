@@ -1,6 +1,6 @@
 <template>
 	<ModalFrame
-		icon="exclamation"
+		:icon="icon || 'exclamation'"
 		:title="title"
 
 		:size="ModalSize.small"
@@ -39,6 +39,9 @@
 				type: String,
 			},
 			title: {
+				type: String,
+			},
+			icon: {
 				type: String,
 			},
 			confirmLabel: {

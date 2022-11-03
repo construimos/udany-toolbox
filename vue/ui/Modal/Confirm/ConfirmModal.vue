@@ -1,6 +1,6 @@
 <template>
 	<ModalFrame
-		icon="question"
+		:icon="icon || 'question'"
 		:title="title"
 
 		:size="ModalSize.small"
@@ -42,6 +42,9 @@
 				type: String,
 			},
 			title: {
+				type: String,
+			},
+			icon: {
 				type: String,
 			},
 			confirmLabel: {

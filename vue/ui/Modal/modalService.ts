@@ -131,6 +131,7 @@ export class ModalService {
 	async confirm({
 		message = '',
 		title = 'Confirm',
+		icon = '',
 		confirmLabel = 'Ok',
 		cancelLabel = 'Cancel',
 	} = {}) {
@@ -140,6 +141,7 @@ export class ModalService {
 				attributes: {
 					message,
 					title,
+					icon,
 					confirmLabel,
 					cancelLabel,
 				},
@@ -154,6 +156,7 @@ export class ModalService {
 	async alert({
 		message = '',
 		title = 'Alert',
+		icon = '',
 		confirmLabel = 'Ok'
 	} = {}) {
 		return new Promise<void>(async (accept) => {
@@ -162,6 +165,7 @@ export class ModalService {
 				attributes: {
 					message,
 					title,
+					icon,
 					confirmLabel,
 				},
 				listeners: {

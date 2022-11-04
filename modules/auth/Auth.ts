@@ -138,7 +138,12 @@ export class Auth<M extends AuthUser>
 
 		if (this.routing.session) {
 			router.get(`/${this.routing.session}`, (req, res) => {
-				res.send((req.user as M).$serialize(true));
+				if (req.user) {
+					res.send((req.user as M).$serialize(true));
+				} else {
+					res.status(404);
+					res.send(null);
+				}
 			});
 		}
 	}

@@ -87,7 +87,7 @@
 			font-size: .9em;
 			color: var(--button-icon-color-i);
 
-			transition: transform .1s;
+			transition: transform .3s;
 		}
 
 		&:hover {
@@ -111,7 +111,7 @@
 
 		&:hover, &:focus {
 			.button-icon {
-				transform: scale(1.1);
+				transform: scale(1.2);
 			}
 		}
 	}

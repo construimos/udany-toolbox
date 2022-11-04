@@ -1,6 +1,9 @@
 import { DatabaseModel } from '../orm';
 import { Emitter, Entity } from '../base';
 import type { Strategy } from 'passport';
+import passport from 'passport';
+import { Router } from 'express';
+import { RoutingOptions } from './Auth';
 
 export interface StrategyProfile {
 	id: string | number;
@@ -103,6 +106,20 @@ export abstract class AuthStrategy<U extends Entity, P extends StrategyProfile>
 	getProfileId(profile: P): string {
 		return profile.id.toString();
 	}
+
+	generateRoutes(router: Router, routing: RoutingOptions) {
+		router.get(
+			`/${this.key}`,
+			passport.authenticate(this.key, this.authOptions)
+		);
+
+		router.get(
+			`/${this.key}/callback`,
+			passport.authenticate(this.key, { failureRedirect: `/${routing.login}`, ...this.callbackOptions }),
+			routing.postLogin
+		);
+	}
+
 	abstract getProfileName(profile: P):string
 	abstract getProfileEmail(profile: P):string
 	abstract getProfileAvatarUrl(profile: P):string

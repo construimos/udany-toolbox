@@ -6,7 +6,7 @@ import { Application, Router, RequestHandler } from 'express';
 import { AuthStrategy, GenericProfile } from './AuthStrategy';
 import { Emitter } from '../base';
 
-interface RoutingOptions {
+export interface RoutingOptions {
 	baseUrl: string,
 	routerPrefix: string,
 	login?: string,
@@ -124,16 +124,7 @@ export class Auth<M extends AuthUser>
 
 	generateRoutes(router: Router) {
 		for (let strategy of this.strategies) {
-			router.get(
-				`/${strategy.key}`,
-				passport.authenticate(strategy.key, strategy.authOptions)
-			);
-
-			router.get(
-				`/${strategy.key}/callback`,
-				passport.authenticate(strategy.key, { failureRedirect: `/${this.routing.login}`, ...strategy.callbackOptions }),
-				this.routing.postLogin
-			);
+			strategy.generateRoutes(router, this.routing);
 		}
 
 		if (this.routing.logout) {
@@ -147,7 +138,7 @@ export class Auth<M extends AuthUser>
 
 		if (this.routing.session) {
 			router.get(`/${this.routing.session}`, (req, res) => {
-				res.send(req.user);
+				res.send((req.user as M).$serialize(true));
 			});
 		}
 	}

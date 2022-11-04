@@ -43,10 +43,10 @@ class BaseField<I, O> implements FieldOptions<I, O> {
 		this.serialize = o.serialize || ((value: any) => value);
 		this.deserialize = o.deserialize || ((value: any) => value);
 
-		this.serializable = o.serializable || true;
-		this.nullable = o.nullable || false;
-		this.watch = o.watch || false;
-		this.safe = o.safe || true;
+		this.serializable = o.hasOwnProperty('serializable') ? !!o.serializable : true;
+		this.nullable = o.hasOwnProperty('nullable') ? !!o.nullable : false;
+		this.watch = o.hasOwnProperty('watch') ? !!o.watch : false;
+		this.safe = o.hasOwnProperty('safe') ? !!o.safe : true;
 
 		this.defaultValue = o.defaultValue || null;
 	}

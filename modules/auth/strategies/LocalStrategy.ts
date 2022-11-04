@@ -66,7 +66,16 @@ export class LocalStrategy<M extends AuthUser> extends AuthStrategy<M, LocalProf
 	generateRoutes(router: Router, routing: RoutingOptions) {
 		router.post(
 			`/${this.key}`,
-			passport.authenticate(this.key)
+			passport.authenticate(this.key),
+			(req, res) => {
+				if (req.user) {
+					res.status(200);
+					res.send((req.user as M).$serialize(true));
+				} else {
+					res.status(400);
+					res.send('Oops');
+				}
+			}
 		);
 	}
 }

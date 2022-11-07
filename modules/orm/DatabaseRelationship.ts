@@ -13,8 +13,8 @@ interface DatabaseRelationshipOptions<T extends Entity, E extends Entity> {
 	externalKey?: string;
 	externalForeignKey?: string;
 
-	readOnly?: true;
-	autoload?: false;
+	readOnly?: boolean;
+	autoload?: boolean;
 
 	filters?: ModelFilters;
 	order?: string;
@@ -29,20 +29,16 @@ export abstract class DatabaseRelationship<T extends Entity, E extends Entity> i
 	// The property on the main model the relationship will be stored within
 	property: string;
 
-	// The property that identifies the current model within itself (e.g.: it's id)
 	localKey: string;
-	// The property that identifies the current model within the external model (e.g.: authorId)
 	localForeignKey: string;
 
-	// The property that identifies the external model within itself (e.g.: it's id)
 	externalKey: string;
-	// The property that identifies the external model within the current model (e.g.: bookId)
 	externalForeignKey: string;
 
 	// Means the current relationship will only ever query data and never attempt to update it automatically
-	readOnly: true;
+	readOnly: boolean;
 	// Means the current relationship will always be retrieved when retrieving it's main model
-	autoload: false;
+	autoload: boolean;
 
 	// Filters to apply when querying the relationship
 	filters: ModelFilters;
@@ -101,6 +97,71 @@ export abstract class DatabaseRelationship<T extends Entity, E extends Entity> i
 	}
 }
 
+interface DatabaseRelationshipManyToOneOptions<T extends Entity, E extends Entity>
+	extends Omit<Omit<Omit<DatabaseRelationshipOptions<T, E>, 'readOnly'>, 'localKey'>, 'externalForeignKey'> {}
+
+export class DatabaseRelationshipManyToOne<T extends Entity, E extends Entity> extends DatabaseRelationship<T, E> {
+	constructor({
+		model,
+		externalModel,
+
+		property,
+
+		// The property that identifies the external model within the local model (e.g.: a Post's authorId)
+		localForeignKey,
+
+		// The property that identifies the external model within itself (e.g.: an Author's id)
+		externalKey = 'id',
+
+		autoload = false,
+
+		filters = [],
+		order = '',
+	}: DatabaseRelationshipManyToOneOptions<T, E>) {
+		super({
+			model,
+			externalModel,
+
+			property,
+
+			localForeignKey,
+			externalKey,
+
+			readOnly: true,
+			autoload,
+
+			filters,
+			order,
+		})
+	}
+
+	async query(obj): Promise<E> {
+		const id = obj[this.localForeignKey];
+
+		const filters = [
+			...this.filters,
+			new DatabaseQueryCondition({
+				column: this.externalKey,
+				values: id
+			})
+		];
+
+		return this.externalModel.selectFirst({
+			filters: filters,
+			order: this.order
+		});
+	}
+
+	async select(obj): Promise<E> {
+		const result = await this.query(obj);
+
+		obj[this.property] = result;
+
+		return result;
+	}
+
+	async save(obj: T): Promise<void> {}
+}
 
 interface DatabaseRelationshipOneToManyOptions<T extends Entity, E extends Entity>
 	extends Omit<Omit<DatabaseRelationshipOptions<T, E>, 'externalKey'>, 'externalForeignKey'> {}
@@ -112,7 +173,9 @@ export class DatabaseRelationshipOneToMany<T extends Entity, E extends Entity> e
 
 		property,
 
+		// The property that identifies the current model within itself (e.g.: an Author's id)
 		localKey,
+		// The property that identifies the current model within the external model (e.g.: a Book's authorId)
 		localForeignKey,
 
 		readOnly = true,
@@ -203,10 +266,14 @@ export class DatabaseRelationshipManyToMany<T extends Entity, E extends Entity, 
 
 		property,
 
+		// The property that identifies the current model within itself (e.g.: a Author's id)
 		localKey = 'id',
+		// The property that identifies the current model within the relationship model (e.g.: a BookAuthors's authorId)
 		localForeignKey,
 
+		// The property that identifies the external model within itself (e.g.: a Book's id)
 		externalKey = 'id',
+		// The property that identifies the external model within the relationship model (e.g.: a BookAuthors's bookId)
 		externalForeignKey,
 
 		readOnly = true,

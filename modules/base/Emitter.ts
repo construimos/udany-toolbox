@@ -34,7 +34,7 @@ export class Emitter<T extends EventMap> extends HasUniqueId {
 
 	ensureBoundEventsExists() {
 		if (!this.boundEvents) {
-			Object.defineProperty(this, 'boundEvents', {enumerable: false, writable: false, value: {}});
+			Object.defineProperty(this, 'boundEvents', {enumerable: false, writable: true, value: {}});
 		}
 	}
 

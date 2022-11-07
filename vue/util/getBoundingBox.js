@@ -1,4 +1,4 @@
-import { getHtmlElementFromRef } from './useHtmlElement.js';
+import { getHtmlElementFromRef } from './useHtmlElement';
 import { computed } from 'vue';
 
 export function getBoundingBox(element) {

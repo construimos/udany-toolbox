@@ -3,7 +3,7 @@ import { Entity } from '../base';
 import { DatabaseModel, ModelFilters } from './DatabaseModel';
 
 interface DatabaseRelationshipOptions<T extends Entity, E extends Entity> {
-	model: DatabaseModel<T>;
+	model?: DatabaseModel<T>;
 	externalModel: DatabaseModel<E>;
 	property: string;
 

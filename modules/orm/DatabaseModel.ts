@@ -30,7 +30,7 @@ export interface DatabaseFieldOptions {
 	name: string;
 	column?: string;
 	type: string;
-	length: number;
+	length?: number;
 	unsigned?: boolean;
 	nullable?: boolean;
 	defaultValue?: any;
@@ -46,7 +46,7 @@ export class DatabaseField implements DatabaseFieldOptions {
 	name: string;
 	column?: string;
 	type: string;
-	length: number;
+	length?: number;
 	unsigned: boolean;
 	nullable: boolean;
 	defaultValue: any;
@@ -124,6 +124,16 @@ export class DatabaseFieldBoolean extends DatabaseField {
 
 	baseSet(o, val) {
 		o[this.name] = !!val;
+	}
+}
+
+export class DatabaseFieldJson extends DatabaseField {
+	baseGet(o) {
+		return o[this.name] ? JSON.stringify(o[this.name]) : 'null';
+	}
+
+	baseSet(o, val) {
+		o[this.name] = JSON.parse(val);
 	}
 }
 
@@ -493,7 +503,8 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 
 	static Field = {
 		Any: DatabaseField,
-		Boolean: DatabaseFieldBoolean
+		Boolean: DatabaseFieldBoolean,
+		Json: DatabaseFieldJson
 	};
 }
 

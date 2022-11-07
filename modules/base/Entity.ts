@@ -214,6 +214,65 @@ class BooleanField extends BaseField<boolean, boolean> {
 	}
 }
 
+type DateFieldOptions = FieldOptions<number, Date> & {
+	absolute?: boolean
+};
+class DateField extends BaseField<number, Date> {
+	absolute: boolean;
+
+	constructor(o: DateFieldOptions) {
+		super(o);
+
+		this.absolute = !!o.absolute;
+
+		this.serialize = o.serialize || ((value: any) => {
+			if (value instanceof Date) {
+				if (this.absolute) {
+					let dt = new Date(value.getTime());
+					dt.setMinutes(dt.getMinutes() - dt.getTimezoneOffset());
+
+					return Math.floor(dt.getTime() / 1000);
+				} else {
+					return Math.floor(value.getTime() / 1000);
+				}
+			} else {
+				return null;
+			}
+		});
+
+		this.deserialize = o.deserialize || ((value: any) => {
+			if (value instanceof Date) {
+				return value
+			} else {
+				if (typeof value === 'string') {
+					let intval = Date.parse(value);
+
+					if (!isNaN(intval)) {
+						value = intval;
+					} else {
+						value = parseInt(value, 10) * 1000;
+					}
+				} else {
+					value *= 1000;
+				}
+
+				if (value !== null && !isNaN(value)) {
+					let dt = new Date(value);
+
+					if (this.absolute) {
+						dt.setMinutes(dt.getMinutes() + dt.getTimezoneOffset());
+					}
+
+					return dt;
+				}
+			}
+
+			return null;
+		});
+	}
+}
+
+
 type JsonFieldOptions = FieldOptions<string, Object>;
 class JsonField extends BaseField<string, Object> {
 	constructor(o: JsonFieldOptions) {
@@ -511,6 +570,7 @@ export class Entity
 		Integer: (o: IntegerFieldOptions = {}) => getFieldDecorator(new IntegerField(o)),
 		Float: (o: FloatFieldOptions = {}) => getFieldDecorator(new FloatField(o)),
 		Boolean: (o: BooleanFieldOptions = {}) => getFieldDecorator(new BooleanField(o)),
+		Date: (o: DateFieldOptions = {}) => getFieldDecorator(new DateField(o)),
 		Json: (o: JsonFieldOptions = {}) => getFieldDecorator(new JsonField(o)),
 		Entity: <E extends Entity>(o: EntityFieldOptions<E> = {}) => getFieldDecorator(new EntityField(o)),
 		EntityList: <E extends Entity>(o: EntityListFieldOptions<E> = {}) => getFieldDecorator(new EntityListField(o)),

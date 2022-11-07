@@ -37,6 +37,7 @@ export interface DatabaseFieldOptions {
 	autoIncrement?: boolean;
 	primaryKey?: boolean;
 	unique?: boolean;
+	serializeBefore?: boolean;
 
 	getFunction?: Function;
 	setFunction?: Function;
@@ -53,6 +54,7 @@ export class DatabaseField implements DatabaseFieldOptions {
 	autoIncrement: boolean;
 	primaryKey: boolean;
 	unique: boolean;
+	serializeBefore: boolean;
 
 	getFunction: Function;
 	setFunction: Function;
@@ -68,6 +70,7 @@ export class DatabaseField implements DatabaseFieldOptions {
 		primaryKey = false,
 		unique = false,
 		column = null,
+		serializeBefore = false,
 		getFunction = null,
 		setFunction = null,
 	}: DatabaseFieldOptions) {
@@ -81,6 +84,7 @@ export class DatabaseField implements DatabaseFieldOptions {
 		this.primaryKey = primaryKey;
 		this.unique = unique;
 		this.column = column ? column : name;
+		this.serializeBefore = !!serializeBefore;
 
 		/** @type {Function} */
 		this.getFunction = getFunction;
@@ -88,11 +92,16 @@ export class DatabaseField implements DatabaseFieldOptions {
 		this.setFunction = setFunction;
 	}
 
-	baseGet(o) {
+	baseGet(o: Entity) {
+		if (this.serializeBefore) {
+			let field = o.$field(this.name);
+			return field.get(o);
+		}
+
 		return o[this.name];
 	}
 
-	baseSet(o, val) {
+	baseSet(o: Entity, val) {
 		o[this.name] = val;
 	}
 

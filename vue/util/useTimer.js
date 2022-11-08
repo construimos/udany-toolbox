@@ -1,4 +1,4 @@
-function useTimer(fn, time = 0) {
+export function useTimer(fn, time = 0) {
 	let state = {
 		id: 0,
 		done: false,
@@ -17,7 +17,7 @@ function useTimer(fn, time = 0) {
 		},
 		stop() {
 			if (!state.done) {
-				clearTimeout(id);
+				clearTimeout(state.id);
 				state.id = 0;
 			}
 		}

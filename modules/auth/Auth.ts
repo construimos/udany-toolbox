@@ -129,10 +129,8 @@ export class Auth<M extends AuthUser>
 
 		if (this.routing.logout) {
 			router.get(`/${this.routing.logout}`, (req, res, next) => {
-				req.logout((err) => {
-					if (err) { return next(err); }
-					res.redirect(`/${this.routing.home}`);
-				});
+				req.logout(() => {});
+				res.redirect(`/${this.routing.home}`);
 			});
 		}
 

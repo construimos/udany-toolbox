@@ -7,7 +7,7 @@
 </template>
 
 <script>
-	const ResizeObserver = window.ResizeObserver || null;
+	const ResizeObserver = (typeof window !== 'undefined') ? window.ResizeObserver : null;
 
 	export default {
 		name: 'AutoResizer',

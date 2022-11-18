@@ -17,6 +17,7 @@
 		"@vueuse/integrations": "^8.7.5",
 		"express": "^4.18.1",
 		"express-session": "^1.17.3",
+		"focus-trap": "^7.1.0",
 		"mysql2": "^2.3.3",
 		"passport": "^0.4.1",
 		"passport-google-oauth20": "^2.0.0",

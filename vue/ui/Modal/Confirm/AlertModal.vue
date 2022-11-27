@@ -26,11 +26,10 @@
 	import { ModalSize } from '../modalService';
 	import { onBeforeUnmount, onMounted, ref } from 'vue';
 	import { useHtmlElement } from '../../../util/useHtmlElement';
-	import FaIcon from '../../FontAwesome/FaIcon.vue';
 
 	export default {
 		name: 'ConfirmModal',
-		components: { FaIcon, BaseButton, ModalFrame },
+		components: { BaseButton, ModalFrame },
 		data: () => ({
 			ModalSize
 		}),

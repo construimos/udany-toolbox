@@ -15,7 +15,7 @@ class ModalData {
 	listeners: Object;
 
 	shouldHideOnClose?: Boolean;
-	closeOnClickOutside: Boolean;
+	closeOnClickOutside?: Boolean;
 }
 
 class ModalInstance extends ModalData {

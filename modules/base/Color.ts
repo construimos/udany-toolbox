@@ -1,6 +1,7 @@
-import { Entity } from '../Entity.ts';
+import { Entity } from './Entity';
+import { Constructor } from '../../interfaces';
 
-function hue2rgb(p, q, t){
+function hue2rgb(p: number, q: number, t: number): number {
 	if(t < 0) t += 1;
 	if(t > 1) t -= 1;
 	if(t < 1/6) return p + (q - p) * 6 * t;
@@ -9,7 +10,9 @@ function hue2rgb(p, q, t){
 	return p;
 }
 
-function hsl2rgb([h, s, l, a = 1]) {
+declare type ColorValues = [number, number, number, number?];
+
+function hsl2rgb([h, s, l, a = 1]: ColorValues): ColorValues {
 	let r, g, b;
 
 	if (s === 0) {
@@ -30,7 +33,7 @@ function hsl2rgb([h, s, l, a = 1]) {
 	return [r, g, b, a];
 }
 
-function rgb2hsl([r, g, b, a]) {
+function rgb2hsl([r, g, b, a]: ColorValues): ColorValues {
 	r /= 255;
 	g /= 255;
 	b /= 255;
@@ -64,53 +67,69 @@ function rgb2hsl([r, g, b, a]) {
  * @property {Number} a
  */
 class Color extends Entity {
+	@Entity.Field.Integer()
+	r: number;
+
+	@Entity.Field.Integer()
+	g: number;
+
+	@Entity.Field.Integer()
+	b: number;
+
+	@Entity.Field.Float()
+	a?: number;
+
     toString() {
         return `rgba(${this.r}, ${this.g}, ${this.b}, ${this.a})`;
     }
 
-    Serialize() {
+    $serialize() {
         return [this.r, this.g, this.b, this.a];
     }
 
-    FillFromArray(a) {
+	$fill(a) {
     	if (!a) return;
 
         if (a.r) {
-            super.FillFromArray(a);
+            super.$fill(a);
         } else {
             this.r = a[0];
             this.g = a[1];
             this.b = a[2];
             this.a = a[3];
         }
+
+        return this;
     }
 
-	applyDelta(a) {
+	$delta(a) {
 		if (!a) return;
 
 		if (a.r) {
-			super.applyDelta(a);
+			super.$delta(a);
 		} else {
 			this.r = a[0];
 			this.g = a[1];
 			this.b = a[2];
 			this.a = a[3];
 		}
+
+		return this;
 	}
 
-    clone() {
-    	return new this.constructor(this.Serialize());
+    $clone() {
+    	return new (this.constructor as Constructor<Entity>)().$fill(this.$serialize()) as this;
     }
 
-    fromHsl([h, s, l, a = 1]) {
+    fromHsl([h, s, l, a = 1]: ColorValues) {
 	    let rgba = hsl2rgb([h, s, l, a]);
 
-	    this.FillFromArray(rgba);
+	    this.$fill(rgba);
 
 	    return this;
     }
 
-    toHsl() {
+    toHsl(): ColorValues {
     	let { r, g, b, a } = this;
 
 	    return rgb2hsl([r, g, b, a]);
@@ -124,13 +143,13 @@ class Color extends Entity {
     }
 
     toHex(alpha = false) {
-    	let array = this.toJSON().slice(0, 3);
+    	let array = this.$serialize().slice(0, 3);
 
     	if (alpha) {
     		array.push(Math.round(this.a * 255));
 	    }
 
-	    return Color.arrayToHex(array);
+	    return Color.arrayToHex(array as ColorValues);
     }
 
     fillFromHex(hex) {
@@ -144,58 +163,36 @@ class Color extends Entity {
 		    values[3] = this.a;
 	    }
 
-    	this.FillFromArray(values);
+    	this.$fill(values);
     }
 
-	/**
-	 * @param {Number[]} values
-	 * @return {String}
-	 */
-	static arrayToHex(values) {
+	static arrayToHex(values: ColorValues): string {
     	return values
 		    .map(v => v.toString(16).pad('0', 2))
 		    .join('')
 		    .toUpperCase();
     }
 
-	/**
-	 * @param {String} hex
-	 * @return {Number[]}
-	 */
-	static hexToArray(hex) {
-    	return hex.match(/[A-F0-9]{2}/g).map(v => parseInt(v, 16));
+	static hexToArray(hex: string): ColorValues {
+    	return hex.match(/[A-F0-9]{2}/g).map(v => parseInt(v, 16)) as ColorValues;
     }
 
-	/**
-	 * @param {String} hex
-	 * @return {Boolean}
-	 */
-    static hexIsValid(hex) {
+    static hexIsValid(hex: string): boolean {
 		let values = Color.hexToArray(hex);
 
 		return values.length.isBetween(3,4) && values.every(v => v.isBetween(0, 255));
     }
 
-	/**
-     * Transitions between two colors
-     * @param {Color} from
-     * @param {Color} to
-     * @param percent
-     * @returns {Color}
-     */
-    static transition(from, to, percent) {
+    static transition(from: Color, to: Color, percent: number): Color {
         // Calculate the deltas for each component
         let dR = Math.round((to.r - from.r) * percent);
         let dG = Math.round((to.g - from.g) * percent);
         let dB = Math.round((to.b - from.b) * percent);
         let dA = Math.round((to.a - from.a) * percent);
 
-        return new Color({
-            r: from.r + dR,
-            g: from.g + dG,
-            b: from.b + dB,
-            a: from.a + dA
-        });
+        return new Color().$fill(
+        	[from.r + dR, from.g + dG, from.b + dB, from.a + dA]
+		);
     }
 
     /**
@@ -213,13 +210,6 @@ class Color extends Entity {
         return this.transition(colors[currentSection], colors[currentSection + 1], currentProgress);
     }
 }
-Color.Register();
-Color.Attributes = [
-    new Entity.Attributes.Integer('r', false, 0),
-    new Entity.Attributes.Integer('g', false, 0),
-    new Entity.Attributes.Integer('b', false, 0),
-    new Entity.Attributes.Float('a', false, 1)
-];
 
 
 /**
@@ -230,31 +220,42 @@ Color.Attributes = [
  * @property {Number} a
  */
 class HslColor extends Color {
+	@Entity.Field.Float()
+	h: number;
+
+	@Entity.Field.Float()
+	s: number;
+
+	@Entity.Field.Float()
+	l: number;
+
 	toString() {
 		return `hsla(${this.h}turn, ${this.s*100}%, ${this.l*100}%, ${this.a})`;
 	}
 
-	Serialize() {
+	$serialize(): ColorValues {
 		return [this.h, this.s, this.l, this.a];
 	}
 
-	FillFromArray(a) {
+	$fill(a) {
 		if (!a) return;
 
 		if (a.h) {
-			super.FillFromArray(a);
+			super.$fill(a);
 		} else {
 			this.h = a[0];
 			this.s = a[1];
 			this.l = a[2];
 			this.a = a[3];
 		}
+
+		return this;
 	}
 
-	fromRgb([r, g, b, a = 1]) {
+	fromRgb([r, g, b, a = 1]: ColorValues) {
 		let hsla = rgb2hsl([r, g, b, a]);
 
-		this.FillFromArray(hsla);
+		this.$fill(hsla);
 
 		return this;
 	}
@@ -272,7 +273,7 @@ class HslColor extends Color {
 			array.push(Math.round(this.a * 255));
 		}
 
-		return Color.arrayToHex(array);
+		return Color.arrayToHex(array as ColorValues);
 	}
 
 	fillFromHex(hex) {
@@ -287,16 +288,8 @@ class HslColor extends Color {
 
 		values = rgb2hsl(values);
 
-		this.FillFromArray(values);
+		this.$fill(values);
 	}
 }
-HslColor.Register();
-HslColor.Attributes = [
-	new Entity.Attributes.Float('h', false, 0),
-	new Entity.Attributes.Float('s', false, 0),
-	new Entity.Attributes.Float('l', false, 0),
-	new Entity.Attributes.Float('a', false, 1)
-];
 
 export {Color, HslColor};
-export default Color;

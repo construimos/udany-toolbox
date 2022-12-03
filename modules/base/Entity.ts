@@ -16,6 +16,7 @@ interface FieldOptions<I, O> {
 	nullable?: boolean;
 	watch?: boolean;
 	safe?: boolean;
+	inherited?: boolean;
 
 	defaultValue?: Default<O>;
 }
@@ -31,6 +32,7 @@ class BaseField<I, O> implements FieldOptions<I, O> {
 	nullable: boolean;
 	watch: boolean;
 	safe: boolean;
+	inherited: boolean;
 
 	defaultValue: Default<O>;
 
@@ -47,8 +49,34 @@ class BaseField<I, O> implements FieldOptions<I, O> {
 		this.nullable = o.hasOwnProperty('nullable') ? !!o.nullable : false;
 		this.watch = o.hasOwnProperty('watch') ? !!o.watch : false;
 		this.safe = o.hasOwnProperty('safe') ? !!o.safe : true;
+		this.inherited = o.hasOwnProperty('inherited') ? !!o.inherited : false;
 
 		this.defaultValue = o.defaultValue || null;
+	}
+
+	descriptorGet(target: Entity) {
+		if (this.watch) target.emit('get', [this]);
+
+		if (this.inherited && target.$parent && typeof target[this.privateKey] === null) {
+			return target.$parent[this.name]
+		}
+
+		return target[this.privateKey];
+	}
+
+	descriptorSet(target: Entity, value: any) {
+		if (this.watch) {
+			let old = target[this.privateKey];
+
+			let prevent = false;
+			target.emit('set', [this, value, old, () => prevent = true]);
+
+			if (!prevent) {
+				target[this.privateKey] = value;
+			}
+		} else {
+			target[this.privateKey] = value;
+		}
 	}
 
 	define(target: Entity) {
@@ -57,27 +85,28 @@ class BaseField<I, O> implements FieldOptions<I, O> {
 			enumerable: true,
 		};
 
-		if (this.watch) {
+		if (this.watch || this.inherited) {
 			this.privateKey = '__' + this.name;
 
 			Object.defineProperty(target, this.privateKey, {
 				configurable: true,
 				enumerable: false,
-				writable: true
+				writable: true,
+				value: descriptor.value
 			});
 
-			descriptor.get = () => {
-				target.emit('get', [this]);
+			let field = this;
 
-				return target[this.privateKey];
+			descriptor.get = function () {
+				return field.descriptorGet(this)
 			}
 
-			descriptor.set = (value: any) => {
-				let old = target[this.privateKey];
-				target[this.privateKey] = value;
-
-				target.emit('set', [this, value, old]);
+			descriptor.set = function (value: any) {
+				field.descriptorSet(this, value);
 			}
+
+			delete descriptor.writable;
+			delete descriptor.value;
 		} else {
 			descriptor.value = null;
 			descriptor.writable = true;
@@ -442,7 +471,7 @@ export class Entity
 	extends	Emitter<{
 		fill,
 		get: [BaseField<any, any>],
-		set: [BaseField<any, any>, any, any]
+		set: [BaseField<any, any>, any, any, () => void]
 	}>
 {
 	static __class: string = '';
@@ -456,6 +485,10 @@ export class Entity
 
 	get $fields(): BaseField<any, any>[] {
 		return Entity.GetFields(this);
+	}
+
+	get $parent(): this {
+		return null;
 	}
 
 	$field(name: string): BaseField<any, any> {

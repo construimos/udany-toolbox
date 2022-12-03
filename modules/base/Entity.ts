@@ -17,6 +17,7 @@ interface FieldOptions<I, O> {
 	watch?: boolean;
 	safe?: boolean;
 	inherited?: boolean;
+	inheritIfNull?: boolean;
 
 	defaultValue?: Default<O>;
 }
@@ -33,6 +34,7 @@ class BaseField<I, O> implements FieldOptions<I, O> {
 	watch: boolean;
 	safe: boolean;
 	inherited: boolean;
+	inheritIfNull: boolean;
 
 	defaultValue: Default<O>;
 
@@ -50,6 +52,7 @@ class BaseField<I, O> implements FieldOptions<I, O> {
 		this.watch = o.hasOwnProperty('watch') ? !!o.watch : false;
 		this.safe = o.hasOwnProperty('safe') ? !!o.safe : true;
 		this.inherited = o.hasOwnProperty('inherited') ? !!o.inherited : false;
+		this.inheritIfNull = o.hasOwnProperty('inheritIfNull') ? !!o.inheritIfNull : true;
 
 		this.defaultValue = o.defaultValue || null;
 	}
@@ -57,7 +60,7 @@ class BaseField<I, O> implements FieldOptions<I, O> {
 	descriptorGet(target: Entity) {
 		if (this.watch) target.emit('get', [this]);
 
-		if (this.inherited && target.$parent && typeof target[this.privateKey] === null) {
+		if (this.inherited && target.$parent && ((this.inheritIfNull && target[this.privateKey] === null) || typeof target[this.privateKey] === 'undefined')) {
 			return target.$parent[this.name]
 		}
 

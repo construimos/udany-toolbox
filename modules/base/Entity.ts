@@ -132,9 +132,14 @@ class BaseField<I, O> implements FieldOptions<I, O> {
 	}
 
 	get(target:Entity, safeOnly?: boolean): I {
-		if (target[this.name] === null && !this.nullable){
-			return this.serialize(this.default, safeOnly);
+		if (target[this.name] === null || typeof target[this.name] === 'undefined'){
+			if (this.nullable) {
+				return null;
+			} else {
+				return this.serialize(this.default, safeOnly);
+			}
 		}
+
 		return this.serialize(target[this.name], safeOnly);
 	}
 
@@ -350,7 +355,11 @@ class BaseEntityField<E extends Entity, I, O> extends BaseField<I, O> {
 			obj = null;
 		}
 
-		return obj? obj.$fill(plain) : null;
+		if (plain !== obj) {
+			obj.$fill(plain)
+		}
+
+		return obj ? obj : null;
 	}
 }
 
@@ -490,7 +499,7 @@ class UUIDField extends StringField {
 			if (value.match(uuidRegex)) {
 				target[this.name] = this.deserialize(value);
 			} else {
-				console.error(`Attempting to set non UUID to ${this.parent?.name} ${this.name}`);
+				console.error(`Attempting to set non UUID to ${this.parent?.name}.${this.name}`);
 			}
 		}
 	}

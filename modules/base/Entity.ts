@@ -5,6 +5,8 @@ type Serialize<I, O> = (x: O, safeOnly?: boolean) => I;
 type Deserialize<I, O> = (x: I) => O | null;
 type Default<O> = (() => O) | O | null;
 
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 interface FieldOptions<I, O> {
 	name?: string;
 	key?: boolean;
@@ -23,6 +25,7 @@ interface FieldOptions<I, O> {
 }
 
 class BaseField<I, O> implements FieldOptions<I, O> {
+	parent: Constructor<Entity>;
 	name: string;
 	key: boolean;
 
@@ -462,11 +465,41 @@ class EntityListField<E extends Entity> extends BaseEntityField<E, Object[], E[]
 	}
 }
 
+type UUIDFieldOptions = StringFieldOptions;
+class UUIDField extends StringField {
+	constructor(o: UUIDFieldOptions) {
+		super(o);
+	}
+
+	define(target: Entity) {
+		super.define(target);
+
+		if (target[this.name] === undefined || (target[this.name] === null && !this.nullable)) {
+			target[this.name] = this.default;
+		}
+	}
+
+	get default() {
+		return crypto.randomUUID();
+	}
+
+	set(target: any, value: string) {
+		if (value === null && !this.nullable){
+			target[this.name] = this.default;
+		} else {
+			if (value.match(uuidRegex)) {
+				target[this.name] = this.deserialize(value);
+			} else {
+				console.error(`Attempting to set non UUID to ${this.parent?.name} ${this.name}`);
+			}
+		}
+	}
+}
+
 const getFieldDecorator = (field: BaseField<any, any>) => (target: Entity, property: string) => {
 	if (!field.name) field.name = property;
 
-	let fields = Entity.GetOwnFields(target);
-	fields.push(field);
+	Entity.RegisterField(target, field);
 };
 
 
@@ -600,6 +633,14 @@ export class Entity
 		return (target as any)._fields;
 	}
 
+	static RegisterField(target: Entity, field: BaseField<any, any>) {
+		let fields = this.GetOwnFields(target);
+
+		fields.push(field);
+
+		field.parent = (target.constructor as any);
+	}
+
 	static Field = {
 		Any: (o: FieldOptions<any, any> = {}) => getFieldDecorator(new BaseField(o)),
 		String: (o: StringFieldOptions = {}) => getFieldDecorator(new StringField(o)),
@@ -610,6 +651,7 @@ export class Entity
 		Json: (o: JsonFieldOptions = {}) => getFieldDecorator(new JsonField(o)),
 		Entity: <E extends Entity>(o: EntityFieldOptions<E> = {}) => getFieldDecorator(new EntityField(o)),
 		EntityList: <E extends Entity>(o: EntityListFieldOptions<E> = {}) => getFieldDecorator(new EntityListField(o)),
+		UUID: (o: UUIDFieldOptions = {}) => getFieldDecorator(new UUIDField(o)),
 	};
 
 	$clone(): this {

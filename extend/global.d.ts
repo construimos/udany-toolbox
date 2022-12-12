@@ -32,7 +32,8 @@ declare global {
 		last(): T | undefined;
 		move(from: Number, to: Number): void;
 		remove(...elements: T[]): this;
-		unique(value?: boolean): boolean;
+		unique(value: boolean): this;
+		unique(): boolean;
 		insertAt(index: number, value: T): this;
 		shuffle(): this;
 		randomElement(): T;

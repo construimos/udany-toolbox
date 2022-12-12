@@ -523,6 +523,21 @@ export class Entity
 	declare _fields: BaseField<any, any>[];
 	declare static _fieldCache: BaseField<any, any>[];
 	static namespace: string;
+	$own: this;
+
+	constructor() {
+		super();
+		this.$own = new Proxy(this, {
+			get: (target: this, p: string): any => {
+				let field = this.$field(p);
+				if (field && field.inherited) {
+					return target[field.privateKey];
+				}
+
+				return target[p];
+			}
+		});
+	}
 
 	get $class() {
 		return (this.constructor as typeof Entity).class;

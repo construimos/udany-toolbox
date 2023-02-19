@@ -60,14 +60,10 @@
 			let confirmButtonRef = ref();
 			let confirmButton = useHtmlElement(confirmButtonRef);
 
-			const trap = useFocusTrap(rootRef, { immediate: true });
+			useFocusTrap(rootRef, { immediate: true });
 
 			onMounted(() => {
 				confirmButton.value.focus();
-			});
-
-			onBeforeUnmount(() => {
-				trap.deactivate();
 			});
 
 			return {

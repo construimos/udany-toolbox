@@ -372,6 +372,7 @@ export class DatabaseRelationshipManyToMany<T extends Entity, E extends Entity, 
 }
 
 const Relationship = {
+	ManyToOne: DatabaseRelationshipManyToOne,
 	OneToMany: DatabaseRelationshipOneToMany,
 	ManyToMany: DatabaseRelationshipManyToMany
 }

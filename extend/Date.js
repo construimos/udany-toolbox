@@ -1,4 +1,4 @@
-import './Number';
+import './Number.ts';
 
 Date.prototype.format = function (f) {
 	if (!this.strings) {

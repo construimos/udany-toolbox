@@ -1,0 +1,74 @@
+<template>
+	<ModalFrame
+		:icon="icon || 'exclamation'"
+		:title="title"
+
+		:size="ModalSize.small"
+
+		:show-close="false"
+	>
+		<p class="pt-3 px-2 pb-3">{{message}}</p>
+
+		<div class="text-end pt-2 pb-3" ref="rootRef" @keydown.esc="$emit('close', false)">
+
+			<BaseButton class="ms-2" @click="$emit('close')" ref="confirmButtonRef" icon="check">
+				{{confirmLabel}}
+			</BaseButton>
+		</div>
+	</ModalFrame>
+</template>
+
+<script>
+	import { useFocusTrap } from '@vueuse/integrations/useFocusTrap';
+
+	import ModalFrame from '../ModalFrame.vue';
+	import BaseButton from '../../Button/BaseButton.vue';
+	import { ModalSize } from '../modalService';
+	import { onBeforeUnmount, onMounted, ref } from 'vue';
+	import { useHtmlElement } from '../../../util/useHtmlElement';
+
+	export default {
+		name: 'ConfirmModal',
+		components: { BaseButton, ModalFrame },
+		data: () => ({
+			ModalSize
+		}),
+		props: {
+			message: {
+				type: String,
+			},
+			title: {
+				type: String,
+			},
+			icon: {
+				type: String,
+			},
+			confirmLabel: {
+				type: String,
+				default: 'Ok',
+			},
+		},
+		setup() {
+			let rootRef = ref();
+			let confirmButtonRef = ref();
+			let confirmButton = useHtmlElement(confirmButtonRef);
+
+			useFocusTrap(rootRef, { immediate: true });
+
+			onMounted(() => {
+				confirmButton.value.focus();
+			});
+
+			return {
+				rootRef,
+				confirmButtonRef,
+			}
+		}
+	}
+</script>
+
+<style lang="scss" scoped>
+	p {
+		font-size: $font-size-sm;
+	}
+</style>

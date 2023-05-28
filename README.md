@@ -1,4 +1,4 @@
-# UDany Toolbox
+# UDany Toolbox (Typescript Version)
 
 A set of utility functions, classes and utilities.
 

@@ -1,15 +1,4 @@
-import {Emitter} from '../classes/Emitter.js'
-
 if (Object.getOwnPropertyDescriptor(Array.prototype, 'push').writable) {
-	// Makes array an event emitter
-	let descriptors = Object.getOwnPropertyDescriptors(Emitter.prototype);
-
-	for (let key of Object.keys(descriptors)) {
-		if (key === 'constructor') continue;
-
-		Object.defineProperty(Array.prototype, key, descriptors[key]);
-	}
-
 	// Utility functions
 	Array.prototype.selfConcat = function () {
 		for (let i = 0; i < arguments.length; i++) {
@@ -18,6 +7,8 @@ if (Object.getOwnPropertyDescriptor(Array.prototype, 'push').writable) {
 				this.push.apply(this, a);
 			}
 		}
+
+		return this;
 	};
 
 	Array.prototype.last = function () {
@@ -49,7 +40,7 @@ if (Object.getOwnPropertyDescriptor(Array.prototype, 'push').writable) {
 		if (arguments.length === 0) {
 			return !!this._unique;
 		} else {
-			this._unique = arguments[0];
+			this._unique = !!arguments[0];
 			return this;
 		}
 	};
@@ -73,27 +64,12 @@ if (Object.getOwnPropertyDescriptor(Array.prototype, 'push').writable) {
 				}
 			}
 
-			this.emit('add', [items]);
-
 			return this.super_push(...items);
-		};
-
-		Array.prototype.super_splice = Array.prototype.splice;
-		Array.prototype.splice = function (...args) {
-			let removed = this.super_splice(...args);
-
-			if (removed.length) {
-				this.emit('remove', [removed]);
-			}
-
-			return removed;
 		};
 	}
 
 	Array.prototype.insertAt = function (index, value) {
 		this.splice(index, 0, value);
-
-		this.emit('add', [[value]]);
 
 		return this;
 	};

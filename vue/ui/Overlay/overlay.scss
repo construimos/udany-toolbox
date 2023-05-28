@@ -1,0 +1,6 @@
+#screen-overlay {
+    @include fillAbsolute();
+
+    pointer-events: none;
+    overflow: hidden;
+}

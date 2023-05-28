@@ -1,0 +1,121 @@
+@mixin arrow-bottom($h, $w, $color) {
+	display: inline-block;
+	border-right: calc(#{$w} / 2) solid transparent;
+	border-left: calc(#{$w} / 2) solid transparent;
+	border-top: $h solid $color;
+}
+
+@mixin arrow-top($h, $w, $color) {
+	display: inline-block;
+	border-right: calc(#{$w} / 2) solid transparent;
+	border-left: calc(#{$w} / 2) solid transparent;
+	border-bottom: $h solid $color;
+}
+
+.simple-tooltip {
+	$tooltip-bg: rgba(black, .9);
+	$arrow-width: 10px;
+	$arrow-height: 5px;
+
+	display: block;
+	white-space: nowrap;
+	position: absolute;
+	z-index: 50;
+
+	background: $tooltip-bg;
+	padding: 5px 10px;
+	border-radius: 4px;
+
+	color: white;
+	font-style: normal;
+	font-size: $font-size-xs;
+
+	transition: opacity .3s ease-in-out;
+	opacity: 0;
+	pointer-events: none;
+	user-select: none;
+
+	&.visible {
+		opacity: 1;
+	}
+
+	&:after, &:before {
+		content: ' ';
+		position: absolute;
+	}
+
+
+	&:after {
+		left: 50%;
+		transform: translateX(-50%);
+	}
+
+	left: 50%;
+	bottom: -$arrow-height - 4;
+
+	&.left, &.right {
+		float: none;
+	}
+
+	&.left {
+		&:after {
+			left: auto;
+			right: calc(#{$arrow-width} / 2);
+		}
+
+		left: auto;
+		right: -$arrow-width;
+	}
+
+	&.right {
+		&:after {
+			left: $arrow-width * 1.4;
+		}
+
+		left: -$arrow-width;
+	}
+
+
+	&.bottom {
+		&:after {
+			@include arrow-top($arrow-height, $arrow-width, $tooltip-bg);
+			top: -$arrow-height+1;
+		}
+		&:before {
+			top: -$arrow-height+1;
+			height: $arrow-height;
+			left: 0;
+			right: 0;
+		}
+
+		bottom: -$arrow-height - 4;
+		top: initial;
+
+		transform: translate(-50%, 100%);
+		&.left, &.right {
+			transform: translate(0, 100%);
+		}
+	}
+
+	&.top {
+		&:after {
+			@include arrow-bottom($arrow-height, $arrow-width, $tooltip-bg);
+			bottom: -$arrow-height;
+		}
+		&:before {
+			bottom: -$arrow-height;
+			height: $arrow-height+2;
+			left: 0;
+			right: 0;
+		}
+
+		margin-top: -$arrow-height - 4;
+		bottom: initial;
+		top: 0;
+
+		transform: translate(-50%, -100%);
+		&.left, &.right {
+			transform: translate(0, -100%);
+		}
+	}
+}

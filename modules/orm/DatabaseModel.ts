@@ -136,6 +136,18 @@ export class DatabaseFieldBoolean extends DatabaseField {
 	}
 }
 
+export class DatabaseFieldDatetime extends DatabaseField {
+	baseGet(o) {
+		let value = o[this.name];
+		if (value instanceof Date) {
+			return value.toISOString().slice(0, 19).replace('T', ' ');
+		}
+
+		if (!this.nullable) console.error(`Non nullable DateTime field ${this.name} is not a valid object`);
+		return null;
+	}
+}
+
 export class DatabaseFieldJson extends DatabaseField {
 	baseGet(o) {
 		return o[this.name] ? JSON.stringify(o[this.name]) : 'null';
@@ -255,7 +267,16 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 
 		let [rows] = await this.db.connection.query(query, params);
 
-		return (rows as RowDataPacket[]).map(row => new this.entity().$fill(row));
+		const fields = this.fields.filter(f => !fieldNames.length || fieldNames.indexOf(f.name) >= 0);
+
+		return (rows as RowDataPacket[]).map(row => {
+			const data = fields.reduce((data, field) => {
+				field.set(data, row[field.column]);
+				return data;
+			}, {});
+
+			return new this.entity().$fill(data);
+		});
 	}
 
 	async selectFirst({
@@ -513,6 +534,7 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 	static Field = {
 		Any: DatabaseField,
 		Boolean: DatabaseFieldBoolean,
+		DateTime: DatabaseFieldDatetime,
 		Json: DatabaseFieldJson
 	};
 }

@@ -21,6 +21,8 @@ interface AuthOptions<M extends AuthUser> {
 	userModel: DatabaseModel<M>;
 	userFactory: (profile: GenericProfile) => M;
 
+	apiPrefix?: string;
+
 	strategies: AuthStrategy<M, any>[];
 
 	routing?: RoutingOptions;
@@ -38,6 +40,8 @@ export class Auth<M extends AuthUser>
 	userModel: DatabaseModel<M>;
 	userFactory: (profile: GenericProfile) => M;
 
+	apiPrefix: string;
+
 	strategies: AuthStrategy<M, any>[] = [];
 
 	routing?: RoutingOptions;
@@ -50,6 +54,8 @@ export class Auth<M extends AuthUser>
 
 		strategies = [],
 
+		apiPrefix = '/api',
+
 		routing,
 
 		sessionOptions,
@@ -58,6 +64,8 @@ export class Auth<M extends AuthUser>
 
 		this.userModel = userModel;
 		this.userFactory = userFactory;
+
+		this.apiPrefix = apiPrefix;
 
 		this.strategies.push(...strategies);
 
@@ -110,9 +118,9 @@ export class Auth<M extends AuthUser>
 		passport.serializeUser((user: M, done) => this.serializeUser(user, done));
 		passport.deserializeUser((user: M, done) => this.deserializeUser(user, done));
 
-		app.use(session(this.sessionOptions));
-		app.use(passport.initialize({ userProperty: null }));
-		app.use(passport.session({ pauseStream: false }));
+		app.use(this.apiPrefix, session(this.sessionOptions));
+		app.use(this.apiPrefix, passport.initialize({ userProperty: null }));
+		app.use(this.apiPrefix, passport.session({ pauseStream: false }));
 	}
 
 	getAuthUrl(strategy: AuthStrategy<M, any>) {

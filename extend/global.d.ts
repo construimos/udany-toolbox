@@ -18,8 +18,6 @@ declare global {
 
 	interface Date {
 		format(f: string): string;
-		clamp(min: number, max: number):number;
-		isBetween(min: number, max: number):boolean;
 	}
 
 	interface String {

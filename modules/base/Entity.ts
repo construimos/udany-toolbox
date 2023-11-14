@@ -24,7 +24,7 @@ interface FieldOptions<I, O> {
 	defaultValue?: Default<O>;
 }
 
-class BaseField<I, O> implements FieldOptions<I, O> {
+export class BaseField<I, O> implements FieldOptions<I, O> {
 	parent: Constructor<Entity>;
 	name: string;
 	key: boolean;
@@ -176,8 +176,8 @@ class BaseField<I, O> implements FieldOptions<I, O> {
 	}
 }
 
-type StringFieldOptions = FieldOptions<string, string>;
-class StringField extends BaseField<string, string> {
+export type StringFieldOptions = FieldOptions<string, string>;
+export class StringField extends BaseField<string, string> {
 	constructor(o: StringFieldOptions) {
 		super(o);
 
@@ -186,8 +186,8 @@ class StringField extends BaseField<string, string> {
 	}
 }
 
-type IntegerFieldOptions = FieldOptions<number, number> & { radix?: number };
-class IntegerField extends BaseField<number, number> {
+export type IntegerFieldOptions = FieldOptions<number, number> & { radix?: number };
+export class IntegerField extends BaseField<number, number> {
 	radix: number = 10;
 	constructor(o: IntegerFieldOptions) {
 		super(o);
@@ -208,8 +208,8 @@ class IntegerField extends BaseField<number, number> {
 	}
 }
 
-type FloatFieldOptions = FieldOptions<number, number>;
-class FloatField extends BaseField<number, number> {
+export type FloatFieldOptions = FieldOptions<number, number>;
+export class FloatField extends BaseField<number, number> {
 	constructor(o: FloatFieldOptions) {
 		super(o);
 
@@ -227,8 +227,8 @@ class FloatField extends BaseField<number, number> {
 	}
 }
 
-type BooleanFieldOptions = FieldOptions<boolean, boolean>;
-class BooleanField extends BaseField<boolean, boolean> {
+export type BooleanFieldOptions = FieldOptions<boolean, boolean>;
+export class BooleanField extends BaseField<boolean, boolean> {
 	constructor(o: BooleanFieldOptions) {
 		super(o);
 
@@ -254,10 +254,10 @@ class BooleanField extends BaseField<boolean, boolean> {
 	}
 }
 
-type DateFieldOptions = FieldOptions<number, Date> & {
+export type DateFieldOptions = FieldOptions<number, Date> & {
 	absolute?: boolean
 };
-class DateField extends BaseField<number, Date> {
+export class DateField extends BaseField<number, Date> {
 	absolute: boolean;
 
 	constructor(o: DateFieldOptions) {
@@ -313,8 +313,8 @@ class DateField extends BaseField<number, Date> {
 }
 
 
-type JsonFieldOptions = FieldOptions<string, Object>;
-class JsonField extends BaseField<string, Object> {
+export type JsonFieldOptions = FieldOptions<string, Object>;
+export class JsonField extends BaseField<string, Object> {
 	constructor(o: JsonFieldOptions) {
 		super(o);
 
@@ -329,8 +329,8 @@ class JsonField extends BaseField<string, Object> {
 }
 
 
-type BaseEntityFieldOptions<E extends Entity, I, O> = FieldOptions<I, O> & { class?: Constructor<E> };
-class BaseEntityField<E extends Entity, I, O> extends BaseField<I, O> {
+export type BaseEntityFieldOptions<E extends Entity, I, O> = FieldOptions<I, O> & { class?: Constructor<E> };
+export class BaseEntityField<E extends Entity, I, O> extends BaseField<I, O> {
 	class: Constructor<E>;
 
 	fromPlainObject(plain) {
@@ -363,8 +363,8 @@ class BaseEntityField<E extends Entity, I, O> extends BaseField<I, O> {
 	}
 }
 
-type EntityFieldOptions<E extends Entity> = BaseEntityFieldOptions<E, Object, E>;
-class EntityField<E extends Entity> extends BaseEntityField<E, Object, E> {
+export type EntityFieldOptions<E extends Entity> = BaseEntityFieldOptions<E, Object, E>;
+export class EntityField<E extends Entity> extends BaseEntityField<E, Object, E> {
 	constructor(o: EntityFieldOptions<E>) {
 		super(o);
 		this.class = o.class;
@@ -396,8 +396,8 @@ class EntityField<E extends Entity> extends BaseEntityField<E, Object, E> {
 	}
 }
 
-type EntityListFieldOptions<E extends Entity> = BaseEntityFieldOptions<E,Object[], E[]>;
-class EntityListField<E extends Entity> extends BaseEntityField<E, Object[], E[]> {
+export type EntityListFieldOptions<E extends Entity> = BaseEntityFieldOptions<E,Object[], E[]>;
+export class EntityListField<E extends Entity> extends BaseEntityField<E, Object[], E[]> {
 	constructor(o: EntityListFieldOptions<E>) {
 		super(o);
 		this.class = o.class;
@@ -474,8 +474,8 @@ class EntityListField<E extends Entity> extends BaseEntityField<E, Object[], E[]
 	}
 }
 
-type UUIDFieldOptions = StringFieldOptions;
-class UUIDField extends StringField {
+export type UUIDFieldOptions = StringFieldOptions;
+export class UUIDField extends StringField {
 	constructor(o: UUIDFieldOptions) {
 		super(o);
 	}
@@ -505,7 +505,7 @@ class UUIDField extends StringField {
 	}
 }
 
-const getFieldDecorator = (field: BaseField<any, any>) => (target: Entity, property: string) => {
+export const getFieldDecorator = (field: BaseField<any, any>) => (target: Entity, property: string) => {
 	if (!field.name) field.name = property;
 
 	Entity.RegisterField(target, field);

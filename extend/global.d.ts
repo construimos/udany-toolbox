@@ -16,6 +16,12 @@ declare global {
 		isBetween(min: number, max: number):boolean;
 	}
 
+	interface Date {
+		format(f: string): string;
+		clamp(min: number, max: number):number;
+		isBetween(min: number, max: number):boolean;
+	}
+
 	interface String {
 		pad(character: string, size: number, right?: boolean): string;
 		format(values: Dictionary<string>, pattern: ((key: string) => string) | string): string;

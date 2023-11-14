@@ -44,8 +44,4 @@ declare global {
 		shuffle(): this;
 		randomElement(): T;
 	}
-
-	interface Crypto {
-		randomUUID: () => string;
-	}
 }

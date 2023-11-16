@@ -568,6 +568,10 @@ export class Entity
 		}
 	}
 
+	$reset() {
+		this.$fill(new (this.constructor as typeof Entity)().$serialize())
+	}
+
 	$fill(a: any): this {
 		if (!a) a = [];
 		if (a instanceof Entity) a = a.$serialize();

@@ -329,12 +329,21 @@ export class JsonField extends BaseField<string, Object> {
 }
 
 
-export type BaseEntityFieldOptions<E extends Entity, I, O> = FieldOptions<I, O> & { class?: Constructor<E> };
+export type BaseEntityFieldOptions<E extends Entity, I, O> = FieldOptions<I, O> & { class?: Constructor<E>, self?: boolean };
 export class BaseEntityField<E extends Entity, I, O> extends BaseField<I, O> {
 	class: Constructor<E>;
+	self: boolean;
+
+	constructor(o: BaseEntityFieldOptions<E, I, O>) {
+		super(o);
+		this.class = o.class;
+		this.self = !!o.self;
+	}
 
 	fromPlainObject(plain) {
 		let obj;
+
+		if (!this.class && this.self) this.class = this.parent as Constructor<E>;
 
 		if (this.class) {
 			if (plain instanceof this.class) {
@@ -367,7 +376,6 @@ export type EntityFieldOptions<E extends Entity> = BaseEntityFieldOptions<E, Obj
 export class EntityField<E extends Entity> extends BaseEntityField<E, Object, E> {
 	constructor(o: EntityFieldOptions<E>) {
 		super(o);
-		this.class = o.class;
 
 		this.serialize = o.serialize || ((value: E, safeOnly= false) => value ? value.$serialize(safeOnly) : value);
 
@@ -400,7 +408,6 @@ export type EntityListFieldOptions<E extends Entity> = BaseEntityFieldOptions<E,
 export class EntityListField<E extends Entity> extends BaseEntityField<E, Object[], E[]> {
 	constructor(o: EntityListFieldOptions<E>) {
 		super(o);
-		this.class = o.class;
 
 		this.serialize = o.serialize || ((value: E[], safeOnly= false) => value.map(v => v.$serialize(safeOnly)));
 

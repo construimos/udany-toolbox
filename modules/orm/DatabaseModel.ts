@@ -128,7 +128,8 @@ export class DatabaseField implements DatabaseFieldOptions {
 
 export class DatabaseFieldBoolean extends DatabaseField {
 	baseGet(o) {
-		return o[this.name] ? 1 : 0;
+		const val = super.baseGet(o);
+		return val ? 1 : 0;
 	}
 
 	baseSet(o, val) {
@@ -138,7 +139,7 @@ export class DatabaseFieldBoolean extends DatabaseField {
 
 export class DatabaseFieldDatetime extends DatabaseField {
 	baseGet(o) {
-		let value = o[this.name];
+		const value = super.baseGet(o);
 		if (value instanceof Date) {
 			return value.toISOString().slice(0, 19).replace('T', ' ');
 		}
@@ -146,11 +147,15 @@ export class DatabaseFieldDatetime extends DatabaseField {
 		if (!this.nullable) console.error(`Non nullable DateTime field ${this.name} is not a valid object`);
 		return null;
 	}
+	baseSet(o: Entity, value: Date) {
+		o[this.name] = value?.toISOString();
+	}
 }
 
 export class DatabaseFieldJson extends DatabaseField {
 	baseGet(o) {
-		return o[this.name] ? JSON.stringify(o[this.name]) : 'null';
+		const val = super.baseGet(o);
+		return val ? JSON.stringify(val) : 'null';
 	}
 
 	baseSet(o, val) {

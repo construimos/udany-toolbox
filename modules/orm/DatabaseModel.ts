@@ -136,11 +136,27 @@ export class DatabaseFieldBoolean extends DatabaseField {
 		o[this.name] = !!val;
 	}
 }
+export interface DatabaseFieldDatetimeOptions extends DatabaseFieldOptions{
+	absolute?: boolean;
+}
 
 export class DatabaseFieldDatetime extends DatabaseField {
+	absolute: boolean;
+
+	constructor(options: DatabaseFieldDatetimeOptions) {
+		super(options);
+		this.absolute = !!options.absolute;
+	}
+
 	baseGet(o) {
-		const value = super.baseGet(o);
+		let value = super.baseGet(o) as Date;
 		if (value instanceof Date) {
+			if (this.absolute) {
+				let dt = new Date(value.getTime());
+				dt.setMinutes(dt.getMinutes() - dt.getTimezoneOffset());
+				value = dt;
+			}
+
 			return value.toISOString().slice(0, 19).replace('T', ' ');
 		}
 

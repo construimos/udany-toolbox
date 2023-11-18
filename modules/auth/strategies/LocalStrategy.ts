@@ -5,11 +5,14 @@ import type { Strategy } from 'passport';
 import { RoutingOptions } from '../Auth';
 import { Router } from 'express';
 import passport from 'passport';
+import type { RequestHandler, RouteParameters } from 'express-serve-static-core';
+import type { ParsedQs } from 'qs';
 
 interface LocalProfile extends StrategyProfile {}
 
 interface LocalStrategyOptions<M extends AuthUser> extends StrategyOptions {
-	verifyPassword: (user: M, password: string) => Promise<boolean>|boolean
+	verifyPassword: (user: M, password: string) => Promise<boolean>|boolean,
+	postLogin?: RequestHandler<string, RouteParameters<string>, any, ParsedQs, Record<string, any>>
 }
 
 export class LocalStrategy<M extends AuthUser> extends AuthStrategy<M, LocalProfile>{
@@ -29,11 +32,11 @@ export class LocalStrategy<M extends AuthUser> extends AuthStrategy<M, LocalProf
 
 		// Check if it's already in database
 		let user = await this.userModel.selectFirst({
-				filters: [{
-					column: this.emailField,
-					values: data.email
-				}]
-			});
+			filters: [{
+				column: this.emailField,
+				values: data.email
+			}]
+		});
 
 		if (user && await this.options.verifyPassword(user, password)) {
 			done(null, user);
@@ -67,7 +70,9 @@ export class LocalStrategy<M extends AuthUser> extends AuthStrategy<M, LocalProf
 		router.post(
 			`/${this.key}`,
 			passport.authenticate(this.key),
-			(req, res) => {
+			(req, res, next) => {
+				if (this.options.postLogin) this.options.postLogin(req as any, res, next);
+
 				if (req.user) {
 					res.status(200);
 					res.send((req.user as M).$serialize(true));

@@ -2,6 +2,7 @@ import { Entity } from '../base';
 import { Database } from './Database';
 import { Constructor } from '../../interfaces';
 import { DatabaseRelationship } from './DatabaseRelationship';
+import type { PoolConnection } from 'mysql2/promise';
 
 import {
 	DatabaseQueryClause,
@@ -136,6 +137,7 @@ export class DatabaseFieldBoolean extends DatabaseField {
 		o[this.name] = !!val;
 	}
 }
+
 export interface DatabaseFieldDatetimeOptions extends DatabaseFieldOptions{
 	absolute?: boolean;
 }
@@ -222,8 +224,15 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 	 */
 	async save(obj: T, {
 		allowedFields = [],
-		insert = false
-	}: { allowedFields?: string[], insert?: boolean	} = {}) {
+		insert = false,
+		transaction = null
+	}: {
+		allowedFields?: string[],
+		insert?: boolean,
+		transaction?: PoolConnection
+	} = {}) {
+		const connection = transaction || await this.db.connection.getConnection();
+
 		const pks = this.primaryKeys();
 		const exists = pks.reduce((v, pk) => v && obj[pk.name], true);
 
@@ -237,7 +246,7 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 		if (insert || !exists || this.updateOnDuplicate) {
 			const query = this.getInsertQuery(data);
 
-			const [result] = await this.db.connection.query(query, data);
+			const [result] = await connection.query(query, data);
 			const insertData = result as OkPacket;
 
 			if (!this.insertWithId) {
@@ -249,15 +258,23 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 				}
 			}
 
-			await this.saveRelationships(obj);
+			await this.saveRelationships(obj, null, connection);
+
+			if (!transaction) {
+				connection.release();
+			}
 
 			return result;
 		} else {
 			const query = this.getUpdateQuery(data);
 
-			let result = await this.db.connection.query(query, data);
+			let result = await connection.query(query, data);
 
-			await this.saveRelationships(obj);
+			await this.saveRelationships(obj, null, connection);
+
+			if (!transaction) {
+				connection.release();
+			}
 
 			return result;
 		}
@@ -342,7 +359,7 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 		return null;
 	}
 
-	async deleteByModel(obj: T): Promise<boolean> {
+	async deleteByModel(obj: T, transaction: PoolConnection = null): Promise<boolean> {
 		const pks = this.primaryKeys();
 
 		const id = [];
@@ -351,10 +368,10 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 			id.push(obj[pk.name]);
 		}
 
-		return this.deleteById(id);
+		return this.deleteById(id, transaction);
 	}
 
-	async deleteById(id: ModelId): Promise<boolean>  {
+	async deleteById(id: ModelId, transaction: PoolConnection = null): Promise<boolean>  {
 		const pks = this.primaryKeys();
 
 		if (!Array.isArray(id)) id = [id];
@@ -368,16 +385,22 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 			});
 		}
 
-		return this.delete(filters);
+		return this.delete(filters, transaction);
 	}
 
-	async delete(filters: ModelFilters): Promise<boolean> {
+	async delete(filters: ModelFilters, transaction: PoolConnection = null): Promise<boolean> {
+		const connection = transaction || await this.db.connection.getConnection();
+
 		const where = getWhere(filters);
 
 		const query = this.getDeleteQuery(where);
 		const params = where.getParams();
 
 		let [data] = await this.db.connection.query(query, params) as OkPacket[];
+
+		if (!transaction) {
+			connection.release();
+		}
 
 		return !!data.affectedRows;
 	}
@@ -544,11 +567,21 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 	/**
 	 * Saves relational data
 	 */
-	async saveRelationships(obj: T, relationships: DatabaseRelationship<T, Entity>[] = null): Promise<void> {
+	async saveRelationships(
+		obj: T,
+		relationships: DatabaseRelationship<T, Entity>[] = null,
+		transaction: PoolConnection = null
+	): Promise<void> {
+		const connection = transaction || await this.db.connection.getConnection();
+
 		if (!relationships) relationships = this.relationships.filter(r => !r.readOnly);
 
 		for (const relationship of relationships) {
-			await relationship.save(obj);
+			await relationship.save(obj, connection);
+		}
+
+		if (!transaction) {
+			connection.release();
 		}
 	}
 

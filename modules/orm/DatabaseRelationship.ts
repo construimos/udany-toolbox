@@ -1,6 +1,7 @@
 import { DatabaseQueryCondition } from './DatabaseQueryComponent';
 import { Entity } from '../base';
 import { DatabaseModel, ModelFilters } from './DatabaseModel';
+import type { PoolConnection } from 'mysql2/promise';
 
 interface DatabaseRelationshipOptions<T extends Entity, E extends Entity> {
 	model?: DatabaseModel<T>;
@@ -80,11 +81,14 @@ export abstract class DatabaseRelationship<T extends Entity, E extends Entity> i
 		this.order = order;
 	}
 
-	abstract select(obj: T):Promise<any>;
+	abstract select(obj: T): Promise<any>;
 
 	//async selectMany(objs) {}
 
-	abstract save(obj):Promise<void>;
+	abstract save(
+		obj: T,
+		transaction?: PoolConnection
+	): Promise<void>;
 
 	setFilters(f) {
 		this.filters = f;
@@ -160,7 +164,7 @@ export class DatabaseRelationshipManyToOne<T extends Entity, E extends Entity> e
 		return result;
 	}
 
-	async save(obj: T): Promise<void> {}
+	async save(obj: T, transaction: PoolConnection = null): Promise<void> {}
 }
 
 interface DatabaseRelationshipOneToManyOptions<T extends Entity, E extends Entity>
@@ -218,7 +222,7 @@ export class DatabaseRelationshipOneToMany<T extends Entity, E extends Entity> e
 		});
 	}
 
-	async select(obj): Promise<E[]> {
+	async select(obj: T): Promise<E[]> {
 		const result = await this.query(obj);
 
 		obj[this.property] = result;
@@ -226,21 +230,21 @@ export class DatabaseRelationshipOneToMany<T extends Entity, E extends Entity> e
 		return result;
 	}
 
-	async save(obj: T): Promise<void> {
+	async save(obj: T, transaction: PoolConnection = null): Promise<void> {
 		let id = obj[this.localKey];
 		let data: E[] = obj[this.property];
 
 		for (const item of data) {
 			item[this.localForeignKey] = id;
 
-			await this.externalModel.save(item);
+			await this.externalModel.save(item, { transaction });
 		}
 
 		let list = await this.query(obj);
 		let deleted = list.filter(element => !data.find(x => this.externalModel.compareByPK(x, element)));
 
 		for (const item of deleted) {
-			await this.externalModel.deleteByModel(item);
+			await this.externalModel.deleteByModel(item, transaction);
 		}
 	}
 }
@@ -304,7 +308,7 @@ export class DatabaseRelationshipManyToMany<T extends Entity, E extends Entity, 
 		this.intermediaryModel = intermediaryModel;
 	}
 
-	async select(obj) {
+	async select(obj: T) {
 		const id = obj[this.localKey];
 
 		let filters: ModelFilters = [
@@ -341,7 +345,7 @@ export class DatabaseRelationshipManyToMany<T extends Entity, E extends Entity, 
 		return result;
 	}
 
-	async save(obj) {
+	async save(obj: T, transaction: PoolConnection = null) {
 		const id = obj[this.localKey];
 		const data = obj[this.property];
 
@@ -363,10 +367,10 @@ export class DatabaseRelationshipManyToMany<T extends Entity, E extends Entity, 
 			})
 		];
 
-		await this.intermediaryModel.delete(filters);
+		await this.intermediaryModel.delete(filters, transaction);
 
 		for (const item of intermediaryItems) {
-			await this.intermediaryModel.save(item, { insert: true });
+			await this.intermediaryModel.save(item, { insert: true, transaction });
 		}
 	}
 }

@@ -205,7 +205,7 @@ export class DatabaseRelationshipOneToMany<T extends Entity, E extends Entity> e
 		})
 	}
 
-	async query(obj): Promise<E[]> {
+	async query(obj: T): Promise<E[]> {
 		const id = obj[this.localKey];
 
 		const filters = [

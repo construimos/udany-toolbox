@@ -3,16 +3,18 @@ import { Entity } from '../base';
 import { DatabaseModel, ModelFilters } from './DatabaseModel';
 import type { PoolConnection } from 'mysql2/promise';
 
+type propertyKey = string | number | symbol;
+
 interface DatabaseRelationshipOptions<T extends Entity, E extends Entity> {
 	model?: DatabaseModel<T>;
 	externalModel: DatabaseModel<E>;
 	property: string;
 
-	localKey?: string;
-	localForeignKey?: string;
+	localKey?: propertyKey;
+	localForeignKey?: propertyKey;
 
-	externalKey?: string;
-	externalForeignKey?: string;
+	externalKey?: propertyKey;
+	externalForeignKey?: propertyKey;
 
 	readOnly?: boolean;
 	autoload?: boolean;
@@ -30,11 +32,11 @@ export abstract class DatabaseRelationship<T extends Entity, E extends Entity> i
 	// The property on the main model the relationship will be stored within
 	property: string;
 
-	localKey: string;
-	localForeignKey: string;
+	localKey: propertyKey;
+	localForeignKey: propertyKey;
 
-	externalKey: string;
-	externalForeignKey: string;
+	externalKey: propertyKey;
+	externalForeignKey: propertyKey;
 
 	// Means the current relationship will only ever query data and never attempt to update it automatically
 	readOnly: boolean;
@@ -81,7 +83,12 @@ export abstract class DatabaseRelationship<T extends Entity, E extends Entity> i
 		this.order = order;
 	}
 
-	abstract select(obj: T): Promise<any>;
+	abstract selectSingle(item: T): Promise<any>;
+	abstract selectMany(items: T[]): Promise<any>;
+
+	async select(items: T|T[]): Promise<any> {
+		return items instanceof Array ? this.selectMany(items) : this.selectSingle(items);
+	}
 
 	//async selectMany(objs) {}
 
@@ -102,7 +109,10 @@ export abstract class DatabaseRelationship<T extends Entity, E extends Entity> i
 }
 
 interface DatabaseRelationshipManyToOneOptions<T extends Entity, E extends Entity>
-	extends Omit<Omit<Omit<DatabaseRelationshipOptions<T, E>, 'readOnly'>, 'localKey'>, 'externalForeignKey'> {}
+	extends Omit<Omit<Omit<DatabaseRelationshipOptions<T, E>, 'readOnly'>, 'localKey'>, 'externalForeignKey'> {
+	localForeignKey: keyof T;
+	externalKey?: keyof E;
+}
 
 export class DatabaseRelationshipManyToOne<T extends Entity, E extends Entity> extends DatabaseRelationship<T, E> {
 	constructor({
@@ -115,7 +125,7 @@ export class DatabaseRelationshipManyToOne<T extends Entity, E extends Entity> e
 		localForeignKey,
 
 		// The property that identifies the external model within itself (e.g.: an Author's id)
-		externalKey = 'id',
+		externalKey = 'id' as keyof E,
 
 		autoload = false,
 
@@ -139,36 +149,54 @@ export class DatabaseRelationshipManyToOne<T extends Entity, E extends Entity> e
 		})
 	}
 
-	async query(obj): Promise<E> {
-		const id = obj[this.localForeignKey];
+	async query(items: T[]): Promise<E[]> {
+		const ids = items.map(i => i[this.localForeignKey]).filter(v => v !== null);
+
+		if (!ids.length) return [];
 
 		const filters = [
 			...this.filters,
 			new DatabaseQueryCondition({
-				column: this.externalKey,
-				values: id
+				column: this.externalKey as string,
+				values: `(${ids.join(',')})`,
+				bound: false,
+				operator: 'IN'
 			})
 		];
 
-		return this.externalModel.selectFirst({
+		return this.externalModel.select({
 			filters: filters,
 			order: this.order
 		});
 	}
 
-	async select(obj): Promise<E> {
-		const result = await this.query(obj);
+	async selectSingle(item: T): Promise<E> {
+		const result = await this.query([item]);
 
-		obj[this.property] = result;
+		item[this.property] = result.length ? result[0] : null;
 
-		return result;
+		return result[0];
+	}
+
+	async selectMany(items: T[]): Promise<E[]> {
+		const results = await this.query(items);
+
+		for (let item of items) {
+			// @ts-ignore
+			item[this.property] = results.find(r => r[this.externalKey] === item[this.localForeignKey]);
+		}
+
+		return results;
 	}
 
 	async save(obj: T, transaction: PoolConnection = null): Promise<void> {}
 }
 
 interface DatabaseRelationshipOneToManyOptions<T extends Entity, E extends Entity>
-	extends Omit<Omit<DatabaseRelationshipOptions<T, E>, 'externalKey'>, 'externalForeignKey'> {}
+	extends Omit<Omit<DatabaseRelationshipOptions<T, E>, 'externalKey'>, 'externalForeignKey'> {
+	localKey: keyof T;
+	localForeignKey?: keyof E;
+}
 
 export class DatabaseRelationshipOneToMany<T extends Entity, E extends Entity> extends DatabaseRelationship<T, E> {
 	constructor({
@@ -205,14 +233,18 @@ export class DatabaseRelationshipOneToMany<T extends Entity, E extends Entity> e
 		})
 	}
 
-	async query(obj: T): Promise<E[]> {
-		const id = obj[this.localKey];
+	async query(items: T[]): Promise<E[]> {
+		const ids = items.map(i => i[this.localKey]).filter(v => v !== null);
+
+		if (!ids.length) return [];
 
 		const filters = [
 			...this.filters,
 			new DatabaseQueryCondition({
-				column: this.localForeignKey,
-				values: id
+				column: this.localForeignKey as string,
+				values: `(${ids.join(',')})`,
+				bound: false,
+				operator: 'IN'
 			})
 		];
 
@@ -222,12 +254,23 @@ export class DatabaseRelationshipOneToMany<T extends Entity, E extends Entity> e
 		});
 	}
 
-	async select(obj: T): Promise<E[]> {
-		const result = await this.query(obj);
+	async selectSingle(item: T): Promise<E[]> {
+		const result = await this.query([item]);
 
-		obj[this.property] = result;
+		item[this.property] = result;
 
 		return result;
+	}
+
+	async selectMany(items: T[]): Promise<E[]> {
+		const results = await this.query(items);
+
+		for (let item of items) {
+			// @ts-ignore
+			item[this.property] = results.filter(r => r[this.localForeignKey] === item[this.localKey]);
+		}
+
+		return results;
 	}
 
 	async save(obj: T, transaction: PoolConnection = null): Promise<void> {
@@ -235,12 +278,12 @@ export class DatabaseRelationshipOneToMany<T extends Entity, E extends Entity> e
 		let data: E[] = obj[this.property];
 
 		for (const item of data) {
-			item[this.localForeignKey] = id;
+			item[this.localForeignKey] = id as any;
 
 			await this.externalModel.save(item, { transaction });
 		}
 
-		let list = await this.query(obj);
+		let list = await this.query([obj]);
 		let deleted = list.filter(element => !data.find(x => this.externalModel.compareByPK(x, element)));
 
 		for (const item of deleted) {
@@ -254,6 +297,12 @@ interface DatabaseRelationshipManyToManyOptions<T extends Entity, E extends Enti
 	extends DatabaseRelationshipOptions<T, E>
 {
 	intermediaryModel: DatabaseModel<I>;
+
+	localKey?: keyof T;
+	localForeignKey: keyof I;
+
+	externalKey?: keyof E;
+	externalForeignKey: keyof I;
 }
 
 export class DatabaseRelationshipManyToMany<T extends Entity, E extends Entity, I extends Entity>
@@ -271,12 +320,12 @@ export class DatabaseRelationshipManyToMany<T extends Entity, E extends Entity, 
 		property,
 
 		// The property that identifies the current model within itself (e.g.: a Author's id)
-		localKey = 'id',
+		localKey = 'id' as keyof T,
 		// The property that identifies the current model within the relationship model (e.g.: a BookAuthors's authorId)
 		localForeignKey,
 
 		// The property that identifies the external model within itself (e.g.: a Book's id)
-		externalKey = 'id',
+		externalKey = 'id' as keyof E,
 		// The property that identifies the external model within the relationship model (e.g.: a BookAuthors's bookId)
 		externalForeignKey,
 
@@ -308,12 +357,12 @@ export class DatabaseRelationshipManyToMany<T extends Entity, E extends Entity, 
 		this.intermediaryModel = intermediaryModel;
 	}
 
-	async select(obj: T) {
+	async selectSingle(obj: T) {
 		const id = obj[this.localKey];
 
 		let filters: ModelFilters = [
 			new DatabaseQueryCondition({
-				column: this.localForeignKey,
+				column: this.localForeignKey as string,
 				values: id
 			})
 		];
@@ -328,7 +377,7 @@ export class DatabaseRelationshipManyToMany<T extends Entity, E extends Entity, 
 
 		filters = this.filters.concat([
 			new DatabaseQueryCondition({
-				column: this.externalKey,
+				column: this.externalKey as string,
 				operator: 'IN',
 				values: `(${externalIds.join(', ')})`,
 				bound: false
@@ -352,8 +401,8 @@ export class DatabaseRelationshipManyToMany<T extends Entity, E extends Entity, 
 		let intermediaryData = data.map(d => {
 			let obj = {};
 
-			obj[this.localForeignKey] = id;
-			obj[this.externalForeignKey] = d[this.externalKey];
+			obj[this.localForeignKey as propertyKey] = id;
+			obj[this.externalForeignKey as propertyKey] = d[this.externalKey];
 
 			return obj;
 		});
@@ -362,7 +411,7 @@ export class DatabaseRelationshipManyToMany<T extends Entity, E extends Entity, 
 
 		let filters = [
 			new DatabaseQueryCondition({
-				column: this.localForeignKey,
+				column: this.localForeignKey as string,
 				values: id
 			})
 		];

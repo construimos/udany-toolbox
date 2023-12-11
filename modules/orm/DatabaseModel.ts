@@ -556,7 +556,7 @@ export class DatabaseModel<T extends Entity> implements DatabaseModelOptions<T> 
 	/**
 	 * Retrieves relational data
 	 */
-	async selectRelationships(obj: T, relationships: DatabaseRelationship<T, Entity>[] = null): Promise<void> {
+	async selectRelationships(obj: T|T[], relationships: DatabaseRelationship<T, Entity>[] = null): Promise<void> {
 		if (!relationships) relationships = this.relationships.filter(r => r.autoload);
 
 		for (const relationship of relationships) {

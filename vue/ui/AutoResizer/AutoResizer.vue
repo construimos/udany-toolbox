@@ -1,5 +1,5 @@
 <template>
-	<div class="auto-resizer" :style="{height}" :class="{ resizing, 'resize-overflow-hidden': overflowHidden }">
+	<div class="auto-resizer" :style="{height}" :class="{ resizing, 'resize-overflow-hidden': overflowHidden, empty: height === '0px' }">
 		<div class="auto-resizer-content" ref="content">
 			<slot />
 		</div>

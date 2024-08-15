@@ -33,6 +33,10 @@ export class StorageService {
 		});
 	}
 
+	static create<T>(prefix: string) {
+		return new StorageService(prefix) as (T & StorageService);
+	}
+
 	retrieve(key: string | symbol) {
 		let storedValue = localStorage.getItem(this.prefix + key.toString());
 		if (storedValue) {

@@ -1,6 +1,6 @@
 {
 	"name": "udany-toolbox",
-	"version": "0.15.0",
+	"version": "0.16.0",
 	"description": "Collection of utilities",
 	"main": "index.js",
 	"scripts": {},

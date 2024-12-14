@@ -28,7 +28,9 @@ export class StorageService {
 			set: (target, prop, value: any) => {
 				this.store(prop, value);
 
-				return target[prop] = value;
+				target[prop] = value;
+
+				return true;
 			}
 		});
 	}
